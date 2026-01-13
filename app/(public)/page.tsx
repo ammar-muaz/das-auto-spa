@@ -41,9 +41,9 @@ const services = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-card">
+    <div className="min-h-screen bg-linear-to-b from-background to-card">
       {/* Hero Section */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+      <header className="relative overflow-hidden bg-linear-to-r from-primary to-primary/80 text-primary-foreground">
         <div className="absolute inset-0 bg-black/10" />
         <div className="container mx-auto px-4 py-16 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
@@ -125,7 +125,7 @@ export default function Home() {
       </main>
 
       {/* Features Section */}
-      <section className="py-16 bg-gradient-to-b from-background to-card">
+      <section className="py-16 bg-linear-to-b from-background to-card">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">The Das Auto Spa Difference</h2>
@@ -154,7 +154,7 @@ export default function Home() {
             ].map((feature, index) => (
               <Card key={index} className="text-center border-0 shadow-lg hover:shadow-xl transition-shadow">
                 <CardContent className="pt-8">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto mb-6 text-primary-foreground">
+                  <div className="w-16 h-16 bg-linear-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto mb-6 text-primary-foreground">
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
