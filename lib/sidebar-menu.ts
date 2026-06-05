@@ -1,171 +1,61 @@
 import {
-    LayoutDashboard,
-    CarFront,
-    CalendarClock,
-    Sparkles,
-    History,
-    CreditCard,
-    MapPin,
-    Settings,
-    LifeBuoy,
-    Package,
-    Users,
-    ShieldCheck,
-    ClipboardList,
+  LayoutDashboard,
+  Car,
+  History,
+  Star,
+  Package,
+  Users,
+  ClipboardList,
+  BarChart3,
+  CalendarOff,
 } from "lucide-react";
 
 export type SidebarMenuGroup = {
+  title: string;
+  items: {
     title: string;
-    items: {
-        title: string;
-        url: string;
-        icon: any;
-    }[];
+    url: string;
+    icon: any;
+  }[];
 };
 
 export const sidebarMenus: Record<string, SidebarMenuGroup[]> = {
-    customer: [
-        {
-            title: "My Garage",
-            items: [
-                {
-                    title: "Dashboard",
-                    url: "/customer/dashboard",
-                    icon: LayoutDashboard,
-                },
-                {
-                    title: "My Vehicles",
-                    url: "/customer/vehicles",
-                    icon: CarFront,
-                },
-            ],
-        },
-        {
-            title: "Services & Booking",
-            items: [
-                {
-                    title: "Book a Wash",
-                    url: "/customer/book",
-                    icon: Sparkles,
-                },
-                {
-                    title: "Appointments",
-                    url: "/customer/appointments",
-                    icon: CalendarClock,
-                },
-                {
-                    title: "Service Menu",
-                    url: "/customer/services",
-                    icon: Package,
-                },
-                {
-                    title: "Locations",
-                    url: "/customer/locations",
-                    icon: MapPin,
-                },
-            ],
-        },
-        {
-            title: "Membership & History",
-            items: [
-                {
-                    title: "Service History",
-                    url: "/customer/history",
-                    icon: History,
-                },
+  customer: [
+    {
+      title: "Main",
+      items: [
+        { title: "Dashboard", url: "/customer/dashboard", icon: LayoutDashboard },
+        { title: "Book a Car Wash", url: "/customer/book", icon: Car },
+        { title: "Booking History", url: "/customer/history", icon: History },
+        { title: "My Reviews", url: "/customer/reviews", icon: Star },
+      ],
+    },
+  ],
 
-                {
-                    title: "Invoices",
-                    url: "/customer/invoices",
-                    icon: CreditCard,
-                },
-            ],
-        },
-        {
-            title: "Support",
-            items: [
-                {
-                    title: "Help Center",
-                    url: "/customer/support",
-                    icon: LifeBuoy,
-                },
-                {
-                    title: "Settings",
-                    url: "/customer/settings",
-                    icon: Settings,
-                },
-            ],
-        },
-    ],
+  admin: [
+    {
+      title: "Admin Panel",
+      items: [
+        { title: "Admin Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+        { title: "Manage Bookings", url: "/admin/bookings", icon: ClipboardList },
+        { title: "Manage Users", url: "/admin/users", icon: Users },
+        { title: "Reports & Analytics", url: "/admin/reports", icon: BarChart3 },
+        { title: "Leave Management", url: "/admin/leave", icon: CalendarOff },
+        { title: "Service Packages", url: "/admin/packages", icon: Package },
+        { title: "Reviews", url: "/admin/reviews", icon: Star },
+      ],
+    },
+  ],
 
-    admin: [
-        {
-            title: "Admin Panel",
-            items: [
-                {
-                    title: "Dashboard",
-                    url: "/admin/dashboard",
-                    icon: LayoutDashboard,
-                },
-                {
-                    title: "Users",
-                    url: "/admin/users",
-                    icon: Users,
-                },
-                {
-                    title: "Services",
-                    url: "/admin/services",
-                    icon: Package,
-                },
-            ],
-        },
-        {
-            title: "System",
-            items: [
-                {
-                    title: "Settings",
-                    url: "/admin/settings",
-                    icon: Settings,
-                },
-                {
-                    title: "Security",
-                    url: "/admin/security",
-                    icon: ShieldCheck,
-                },
-            ],
-        },
-    ],
-
-    serviceProvider: [
-        {
-            title: "Work",
-            items: [
-                {
-                    title: "Dashboard",
-                    url: "/provider/dashboard",
-                    icon: LayoutDashboard,
-                },
-                {
-                    title: "Jobs",
-                    url: "/provider/jobs",
-                    icon: ClipboardList,
-                },
-                {
-                    title: "Locations",
-                    url: "/provider/locations",
-                    icon: MapPin,
-                },
-            ],
-        },
-        {
-            title: "Support",
-            items: [
-                {
-                    title: "Help Center",
-                    url: "/provider/support",
-                    icon: LifeBuoy,
-                },
-            ],
-        },
-    ],
+  serviceProvider: [
+    {
+      title: "Work",
+      items: [
+        { title: "Dashboard", url: "/provider/dashboard", icon: LayoutDashboard },
+        { title: "Job History", url: "/provider/jobs", icon: History },
+        { title: "Reviews", url: "/provider/reviews", icon: Star },
+        { title: "My Leave", url: "/provider/leave", icon: CalendarOff },
+      ],
+    },
+  ],
 };

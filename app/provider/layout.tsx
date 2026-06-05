@@ -1,32 +1,24 @@
-import { Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 import "../globals.css";
 import type { Metadata } from "next";
-import ClientLayout from "./provider-layout";
+import ProviderClientLayout from "./provider-layout";
+import { Providers } from "@/components/providers";
 
-const poppins = Poppins({
-    variable: "--font-poppins",
-    subsets: ["latin"],
-    weight: ["500", "600", "700", "800", "900"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: {
-        default: "Das Auto Spa",
-        template: "%s | Das Auto Spa",
-    },
-    description: "Door-to-Door Car Wash Booking System",
+  title: { default: "Das Auto Spa", template: "%s | Das Auto Spa" },
+  description: "Door-to-Door Car Wash Booking System",
 };
 
-export default function ProviderLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <html lang="en" suppressHydrationWarning>
-            <body className={`${poppins.className} antialiased`}>
-                <ClientLayout>{children}</ClientLayout>
-            </body>
-        </html>
-    );
+export default function ProviderLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <Providers>
+          <ProviderClientLayout>{children}</ProviderClientLayout>
+        </Providers>
+      </body>
+    </html>
+  );
 }

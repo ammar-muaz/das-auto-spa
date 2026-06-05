@@ -112,7 +112,7 @@ export default function Navbar() {
                                 <div className="flex items-center gap-2">
                                     <Phone className="h-4 w-4 text-primary" />
                                     <span className="text-sm font-medium">
-                                        (555) 123-WASH
+                                        +60193253883
                                     </span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-300 dark:bg-gray-700" />

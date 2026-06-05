@@ -1,38 +1,30 @@
 "use client";
 
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbList,
-    BreadcrumbPage,
-} from "@/components/ui/breadcrumb";
+import { usePathname, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { usePathname } from "next/navigation";
-import { getPageTitle } from "@/hooks/get-page-title";
-import { ModeToggle } from "./mode-toggle";
+import { HeaderBell } from "@/components/header-bell";
 
 export function UserHeader() {
     const pathname = usePathname();
-    const pageTitle = getPageTitle(pathname);
+    const router = useRouter();
+    const isSettings = pathname?.includes("/settings");
+    const isHelp = pathname?.includes("/help");
 
     return (
-        <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur sticky top-0 z-50 px-4">
-            <div className="flex items-center gap-4">
-                <SidebarTrigger className="h-9 w-9 data-[state=open]:bg-accent transition-all duration-200 hover:scale-105" />
-
-                <Breadcrumb>
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbPage className="text-sm font-semibold text-foreground">
-                                {pageTitle}
-                            </BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
-            </div>
-
-            <div className="flex items-center gap-3">
-                <ModeToggle />
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-4 md:px-8">
+            <SidebarTrigger className="-ml-1" />
+            {(isSettings || isHelp) && (
+                <button
+                    onClick={() => router.back()}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors ml-1"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+            )}
+            <div className="ml-auto">
+                <HeaderBell />
             </div>
         </header>
     );

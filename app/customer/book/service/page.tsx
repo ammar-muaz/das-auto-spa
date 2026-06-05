@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Clock, Sparkles, Star } from "lucide-react";
+import { Check, ChevronLeft, Clock, Sparkles, Star } from "lucide-react";
 import { services } from "@/lib/bookingOptions";
 import supabase from "@/lib/supabase";
 
@@ -99,9 +99,12 @@ export default function ServiceSelectionPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-4 md:p-8">
             <div className="max-w-5xl mx-auto">
+                <button onClick={() => router.push("/customer/book/car-image")} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-medium transition-colors mb-4">
+                    <ChevronLeft className="w-4 h-4" /><span>Back</span>
+                </button>
                 {/* HEADER */}
-                <div className="bg-white rounded-3xl shadow-sm border p-8 mb-6">
-                    <h1 className="text-2xl font-bold mb-1">Select Service</h1>
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-6">
+                    <h1 className="text-2xl font-bold text-gray-800 mb-1">Select Service</h1>
                     <p className="text-gray-500">
                         Step 3: Choose the best care for your vehicle
                     </p>
@@ -109,7 +112,7 @@ export default function ServiceSelectionPage() {
 
                 {/* AI RECOMMENDATION */}
                 {aiAnalysis && (
-                    <div className="bg-linear-to-r from-purple-600 to-purple-700 rounded-3xl p-6 mb-8 text-white flex gap-6 items-center">
+                    <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-3xl shadow-lg p-6 mb-8 text-white flex flex-col md:flex-row items-center gap-6">
                         <img
                             src={aiAnalysis.imageUrl}
                             alt="AI Analysis"
@@ -182,9 +185,9 @@ export default function ServiceSelectionPage() {
                                         </p>
                                     </div>
                                     <div
-                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                                             isSelected
-                                                ? "bg-blue-500 border-blue-500"
+                                                ? "bg-gray-800 border-blue-500"
                                                 : "border-gray-200"
                                         }`}
                                     >
@@ -199,7 +202,7 @@ export default function ServiceSelectionPage() {
                                         <Clock className="w-4 h-4" />
                                         {service.duration}
                                     </div>
-                                    <div className="text-blue-600 font-black text-xl">
+                                    <div className="text-gray-900 font-black text-xl">
                                         RM {service.price}
                                     </div>
                                 </div>
@@ -221,7 +224,7 @@ export default function ServiceSelectionPage() {
                 </div>
 
                 {/* FOOTER */}
-                <div className="bg-white rounded-3xl border p-6 flex items-center justify-between">
+                <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
                         <p className="text-xs text-gray-400 font-bold uppercase">
                             Selected Service
@@ -233,7 +236,7 @@ export default function ServiceSelectionPage() {
                     <button
                         onClick={handleContinue}
                         disabled={!selectedService}
-                        className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 disabled:bg-gray-200"
+                        className="w-full sm:w-auto px-12 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all shadow-lg shadow-gray-100"
                     >
                         Continue: Date & Time
                     </button>

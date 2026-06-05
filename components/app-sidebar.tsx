@@ -4,220 +4,180 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarRail,
-    useSidebar,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar";
-
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronsUpDown, User, Shield, LogOut, Car } from "lucide-react";
+import { MoreVertical, LogOut, Settings, HelpCircle } from "lucide-react";
 import { sidebarMenus } from "@/lib/sidebar-menu";
 import supabase from "@/lib/supabase";
 
 type Role = "customer" | "admin" | "serviceProvider";
 
+const ROLE_SUBTITLE: Record<Role, string> = {
+  customer: "Customer Portal",
+  admin: "Admin Portal",
+  serviceProvider: "Provider Portal",
+};
+
 interface UserData {
-    name: string;
-    email: string;
-    role: Role;
-    initials: string;
+  name: string;
+  email: string;
+  role: Role;
+  initials: string;
 }
 
 export function AppSidebar({
-    role,
-    ...props
+  role,
+  ...props
 }: React.ComponentProps<typeof Sidebar> & { role: Role }) {
-    const pathname = usePathname();
-    const router = useRouter();
-    const { isMobile } = useSidebar();
+  const pathname = usePathname();
+  const router = useRouter();
 
-    const menuGroups = sidebarMenus[role] ?? [];
+  const menuGroups = sidebarMenus[role] ?? [];
+  const allItems = menuGroups.flatMap((g) => g.items);
 
-    const [userData, setUserData] = useState<UserData | null>(null);
-    const [isLoaded, setIsLoaded] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
-    const isMenuActive = (url: string) =>
-        pathname === url || pathname.startsWith(url + "/");
+  const isMenuActive = (url: string) =>
+    pathname === url || pathname.startsWith(url + "/");
 
-    /* ================= LOAD USER ================= */
-    useEffect(() => {
-        const loadUser = async () => {
-            const { data: authData } = await supabase.auth.getUser();
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) { router.push("/login"); return; }
 
-            if (!authData.user) {
-                router.push("/login");
-                return;
-            }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email, role")
+        .eq("id", authData.user.id)
+        .single();
 
-            const { data: profile, error } = await supabase
-                .from("profiles")
-                .select("full_name, email, role")
-                .eq("id", authData.user.id)
-                .single();
+      if (!profile) return;
 
-            if (error || !profile) {
-                console.error("Failed to load profile", error);
-                return;
-            }
+      const cleanName = profile.full_name.replace(/\s*\(.*?\)/g, "").trim();
+      const initials = cleanName
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p: string) => p[0]?.toUpperCase())
+        .join("") || "U";
 
-            const initials = profile.full_name
-                .split(" ")
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((p: string) => p[0].toUpperCase())
-                .join("");
-
-            setUserData({
-                name: profile.full_name,
-                email: profile.email,
-                role: profile.role,
-                initials,
-            });
-
-            setIsLoaded(true);
-        };
-
-        loadUser();
-    }, [router]);
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push("/login");
+      setUserData({ name: profile.full_name, email: profile.email, role: profile.role, initials });
     };
+    loadUser();
+  }, [router]);
 
-    return (
-        <Sidebar {...props}>
-            {/* ===== HEADER ===== */}
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg">
-                            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 items-center justify-center rounded-lg">
-                                <Car className="size-4" />
-                            </div>
-                            <span className="font-semibold">Das Auto Spa</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
-            {/* ===== CONTENT ===== */}
-            <SidebarContent>
-                {menuGroups.map((group) => (
-                    <SidebarGroup key={group.title}>
-                        <SidebarGroupLabel className="text-xs uppercase text-muted-foreground">
-                            {group.title}
-                        </SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {group.items.map((item) => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <SidebarMenuItem key={item.title}>
-                                            <SidebarMenuButton
-                                                asChild
-                                                isActive={isMenuActive(
-                                                    item.url
-                                                )}
-                                                tooltip={item.title}
-                                            >
-                                                <Link href={item.url}>
-                                                    <Icon className="size-4" />
-                                                    <span>{item.title}</span>
-                                                </Link>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    );
-                                })}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                ))}
-            </SidebarContent>
+  return (
+    <Sidebar variant="floating" collapsible="icon" {...props}>
+      {/* HEADER */}
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" className="pointer-events-none select-none">
+              <img src="/logo.png" alt="Das Auto Spa" className="h-8 w-8 object-contain rounded-lg shrink-0" />
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">Das Auto Spa</span>
+                <span className="truncate text-xs text-muted-foreground">{ROLE_SUBTITLE[role]}</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-            {/* ===== FOOTER ===== */}
-            <SidebarFooter>
-                {!isLoaded || !userData ? (
-                    <Skeleton className="h-10 w-full" />
-                ) : (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <SidebarMenuButton size="lg">
-                                <Avatar className="h-8 w-8 rounded-lg">
-                                    <AvatarFallback>
-                                        {userData.initials}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 text-left">
-                                    <div className="font-medium truncate">
-                                        {userData.name}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {userData.role}
-                                    </div>
-                                </div>
-                                <ChevronsUpDown className="ml-auto size-4" />
-                            </SidebarMenuButton>
-                        </DropdownMenuTrigger>
+      {/* CONTENT */}
+      <SidebarContent>
+        <SidebarMenu className="gap-1 px-2">
+          {allItems.map((item) => {
+            const Icon = item.icon;
+            const active = isMenuActive(item.url);
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  className={active ? "bg-gray-900 text-white hover:bg-gray-800 hover:text-white" : ""}
+                >
+                  <Link href={item.url}>
+                    <Icon className="size-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarContent>
 
-                        <DropdownMenuContent
-                            side={isMobile ? "bottom" : "right"}
-                            align="end"
-                        >
-                            <DropdownMenuLabel>
-                                {userData.email}
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem
-                                    onClick={() => router.push("/profile")}
-                                >
-                                    <User className="mr-2 h-4 w-4" />
-                                    Profile
-                                </DropdownMenuItem>
-
-                                <DropdownMenuItem>
-                                    <Shield className="mr-2 h-4 w-4" />
-                                    Security
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuItem
-                                onClick={handleLogout}
-                                className="text-red-600"
-                            >
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Log out
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
-            </SidebarFooter>
-
-            <SidebarRail />
-        </Sidebar>
-    );
+      {/* FOOTER */}
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+              <Avatar className="h-8 w-8 rounded-full shrink-0">
+                <AvatarFallback className="rounded-full bg-gray-900 text-white text-xs font-bold">
+                  {userData?.initials ?? "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight min-w-0 group-data-[collapsible=icon]:hidden">
+                <span className="truncate font-semibold">{userData?.name ?? ""}</span>
+                <span className="truncate text-xs text-muted-foreground">{userData?.email ?? ""}</span>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-1 rounded-md hover:bg-gray-100 shrink-0 outline-none group-data-[collapsible=icon]:hidden">
+                    <MoreVertical className="size-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 rounded-lg" side="top" align="end" sideOffset={4}>
+                  <div className="flex items-center gap-2 px-2 py-2">
+                    <Avatar className="h-8 w-8 rounded-full shrink-0">
+                      <AvatarFallback className="rounded-full bg-gray-900 text-white text-xs font-bold">
+                        {userData?.initials ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">{userData?.name ?? ""}</span>
+                      <span className="truncate text-xs text-muted-foreground">{userData?.email ?? ""}</span>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push("/settings")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/help")}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    Get Help
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
 }

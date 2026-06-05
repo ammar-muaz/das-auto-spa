@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Das Auto Spa — Demo Script</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 11pt;
+      color: #1a1a1a;
+      background: #fff;
+      line-height: 1.6;
+    }
+
+    /* ── Cover Page ── */
+    .cover {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 60px 40px;
+      page-break-after: always;
+    }
+    .cover-logo {
+      width: 80px;
+      height: 80px;
+      background: #111;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+    }
+    .cover-logo svg { width: 40px; height: 40px; fill: #fff; }
+    .cover h1 { font-size: 28pt; font-weight: 800; color: #111; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .cover .subtitle { font-size: 13pt; color: #6b7280; margin-bottom: 40px; }
+    .cover .meta {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 40px;
+    }
+    .cover .meta-item { text-align: center; }
+    .cover .meta-item .val { font-size: 14pt; font-weight: 700; color: #111; }
+    .cover .meta-item .lbl { font-size: 9pt; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cover-divider { width: 60px; height: 3px; background: #111; margin: 32px auto; border-radius: 2px; }
+    .cover .tagline { font-size: 11pt; color: #6b7280; max-width: 480px; line-height: 1.7; }
+
+    /* ── TOC ── */
+    .toc-page {
+      padding: 60px 60px;
+      page-break-after: always;
+    }
+    .toc-page h2 { font-size: 16pt; font-weight: 700; color: #111; margin-bottom: 28px; border-bottom: 2px solid #f3f4f6; padding-bottom: 12px; }
+    .toc-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 9px 0;
+      border-bottom: 1px dotted #e5e7eb;
+    }
+    .toc-item .toc-title { font-weight: 600; color: #374151; font-size: 10.5pt; }
+    .toc-item .toc-sub { font-size: 9pt; color: #9ca3af; margin-left: 12px; }
+    .toc-item .toc-num { font-size: 9pt; color: #9ca3af; font-weight: 600; }
+
+    /* ── Content pages ── */
+    .section {
+      padding: 52px 60px 40px;
+      page-break-before: always;
+    }
+    .section:first-of-type { page-break-before: avoid; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f3f4f6;
+    }
+    .section-number {
+      width: 36px;
+      height: 36px;
+      background: #111;
+      color: #fff;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13pt;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .section-title { font-size: 16pt; font-weight: 800; color: #111; }
+    .section-subtitle { font-size: 9pt; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* ── Sub-sections ── */
+    .sub { margin-bottom: 24px; }
+    .sub-title {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 10px;
+      padding: 6px 12px;
+      background: #f9fafb;
+      border-left: 3px solid #111;
+      border-radius: 0 6px 6px 0;
+    }
+
+    /* ── Script lines ── */
+    .line {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 10px;
+      align-items: flex-start;
+    }
+    .line-action {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 9.5pt;
+      color: #166534;
+      font-style: italic;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .line-action::before { content: "▶"; font-style: normal; font-size: 8pt; margin-top: 1px; flex-shrink: 0; }
+
+    .line-speak {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 9px 13px;
+      font-size: 10pt;
+      color: #1f2937;
+      margin-bottom: 8px;
+      position: relative;
+    }
+    .line-speak::before {
+      content: '"';
+      font-size: 22pt;
+      color: #d1d5db;
+      position: absolute;
+      top: -6px;
+      left: 8px;
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+
+    .line-note {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 9.5pt;
+      color: #92400e;
+      margin-bottom: 8px;
+    }
+    .line-note strong { font-weight: 700; }
+
+    /* ── Bullet list inside speak ── */
+    .speak-list { margin: 6px 0 0 16px; }
+    .speak-list li { margin-bottom: 4px; font-size: 9.5pt; color: #374151; }
+
+    /* ── Closing summary box ── */
+    .summary-box {
+      background: #111;
+      color: #fff;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-top: 8px;
+    }
+    .summary-box p { margin-bottom: 12px; font-size: 10.5pt; line-height: 1.7; }
+    .summary-box p:last-child { margin-bottom: 0; }
+
+    /* ── Print ── */
+    @media print {
+      body { font-size: 10pt; }
+      .cover { min-height: auto; padding: 80px 60px; }
+      .section { padding: 40px 60px 30px; }
+      .no-break { page-break-inside: avoid; }
+    }
+
+    @page {
+      margin: 0;
+      size: A4;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════ COVER ══════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 10c0-5-4-8-9-8S3 5 3 10c0 3.3 1.7 6.2 4.3 7.9L6 21h12l-1.3-3.1C19.3 16.2 21 13.3 21 10z"/>
+    </svg>
+  </div>
+  <h1>Das Auto Spa</h1>
+  <div class="subtitle">System Demo Script</div>
+  <div class="cover-divider"></div>
+  <p class="tagline">A complete walkthrough of the car wash booking platform — covering all three portals: Customer, Admin, and Service Provider.</p>
+  <div class="meta">
+    <div class="meta-item"><div class="val">3</div><div class="lbl">User Portals</div></div>
+    <div class="meta-item"><div class="val">7</div><div class="lbl">Sections</div></div>
+    <div class="meta-item"><div class="val">Next.js 16</div><div class="lbl">Framework</div></div>
+    <div class="meta-item"><div class="val">Supabase</div><div class="lbl">Backend</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ TOC ══════════════════════════════════ -->
+<div class="toc-page">
+  <h2>Table of Contents</h2>
+  <div class="toc-item"><span class="toc-title">1 &nbsp; Home Page</span><span class="toc-sub">Landing page, services, how it works, contact</span></div>
+  <div class="toc-item"><span class="toc-title">2 &nbsp; Registration &amp; Login</span><span class="toc-sub">Sign up, login, forgot password</span></div>
+  <div class="toc-item"><span class="toc-title">3 &nbsp; Customer Booking Flow</span><span class="toc-sub">Car details, AI analysis, service, location, payment, confirmation</span></div>
+  <div class="toc-item"><span class="toc-title">4 &nbsp; Customer Dashboard &amp; History</span><span class="toc-sub">Dashboard, booking history, reschedule, cancel, review</span></div>
+  <div class="toc-item"><span class="toc-title">5 &nbsp; Admin Portal</span><span class="toc-sub">Dashboard, bookings, users, packages, reviews, leave, reports</span></div>
+  <div class="toc-item"><span class="toc-title">6 &nbsp; Service Provider Portal</span><span class="toc-sub">Dashboard, job detail, completion proof, leave management</span></div>
+  <div class="toc-item"><span class="toc-title">7 &nbsp; Closing Summary</span><span class="toc-sub">System overview wrap-up</span></div>
+</div>
+
+<!-- ══════════════════════════════════ SECTION 1 ══════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <div>
+      <div class="section-title">Home Page</div>
+      <div class="section-subtitle">Navigate to http://localhost:3000</div>
+    </div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Hero Section</div>
+    <div class="line-action">Open browser and navigate to the landing page.</div>
+    <div class="line-speak">This is the Das Auto Spa landing page — a premium mobile car wash booking platform serving Klang Valley, Malaysia.</div>
+    <div class="line-speak">The hero section immediately communicates the value proposition: door-to-door car wash, no queues, no hassle. Customers can either Book Your Wash to register, or scroll down to View Packages.</div>
+    <div class="line-speak">Notice the stats — 500+ happy customers, 4.9 star average rating, 12 service areas, operating 7 days a week.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">About Section</div>
+    <div class="line-action">Scroll down slowly past the hero.</div>
+    <div class="line-speak">The About section builds trust. It highlights that Das Auto Spa uses only eco-friendly products, all technicians are certified, and the service is fully insured. There's a 100% satisfaction guarantee.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Services / Pricing</div>
+    <div class="line-speak">Here are the service packages — fetched live from the database. Prices, features, and duration are all managed by the admin. The most popular package is automatically highlighted based on real booking data.</div>
+    <div class="line-speak">Every package has a clear price in Ringgit, estimated duration, and a list of included features. Customers click Book Now to register and proceed.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">How It Works</div>
+    <div class="line-speak">Four simple steps: Book Online, We Come to You, Relax and Wait, then Drive Clean. This walks the customer through the entire experience before they even sign up.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Service Areas &amp; Contact</div>
+    <div class="line-speak">Das Auto Spa currently covers 12 areas across Klang Valley. The contact section shows the phone number, email, and coverage area with a final call-to-action to book.</div>
+    <div class="line-speak">The landing page is fully responsive. The navbar is transparent over the hero and becomes a white bar with shadow as you scroll. All service packages are dynamic — changes reflect immediately.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ SECTION 2 ══════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div>
+      <div class="section-title">Registration &amp; Login</div>
+      <div class="section-subtitle">Click "Book Your Wash" or "Register" from the home page</div>
+    </div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Registration — /register</div>
+    <div class="line-action">Click "Book Your Wash" or "Register" from the home page → navigates to /register.</div>
+    <div class="line-speak">The registration form asks for full name, email, phone number, and password. Passwords have a show/hide toggle and basic validation — passwords must match and be at least 6 characters.</div>
+    <div class="line-note"><strong>Demo data:</strong> Full Name: Ahmad Fariz · Email: ahmadfariz@email.com · Phone: +60 12-345 6789 · Password: demo123</div>
+    <div class="line-speak">After submitting, the system creates the account in Supabase Auth and inserts a profile record with the role set to customer.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Registration Success Page — /register/success</div>
+    <div class="line-speak">A clean confirmation screen with a green checkmark confirms the account was created. The customer clicks Back to Login to proceed.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Login — /login</div>
+    <div class="line-action">Navigate to /login and enter the credentials just created.</div>
+    <div class="line-speak">The login page supports two methods: Google OAuth for one-click sign-in, or standard email and password.</div>
+    <div class="line-speak">On login, the system checks the user's role from the database. Customers go to the customer dashboard, service providers go to the provider dashboard, admins go to the admin dashboard. All three portals share the same login page — role-based routing happens automatically.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Forgot Password — /forgot-password</div>
+    <div class="line-action">Click "Forgot password?" to show this optionally.</div>
+    <div class="line-speak">If a customer forgets their password, they enter their email here. Supabase sends a reset link directly to their inbox. The page confirms the email was sent and gives tips in case it goes to spam.</div>
+    <div class="line-speak">Authentication is fully handled by Supabase — secure, no passwords stored in our database. New accounts are always created as customers. Admins and service providers are assigned their roles separately through the admin panel.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ SECTION 3 ══════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <div>
+      <div class="section-title">Customer Booking Flow</div>
+      <div class="section-subtitle">5-step wizard: car → AI → service → location → payment</div>
+    </div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Step 1 — Car Details (/customer/book)</div>
+    <div class="line-action">After login, click "Book Now" from the customer dashboard.</div>
+    <div class="line-speak">The booking flow starts with entering car details — brand, model, type, plate number, and optionally color. Previously saved cars appear at the top for one-tap auto-fill. There's a Save this car checkbox for future bookings. The system also restores from a draft if the customer left mid-booking.</div>
+    <div class="line-note"><strong>Demo data:</strong> Toyota · Camry · Sedan · WXY 2003 · White</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Step 2 — AI Car Analysis (/customer/book/car-image)</div>
+    <div class="line-speak">This is one of the standout features — AI-powered car analysis. The customer uploads a photo of their car's exterior, and the AI detects the dirt level: Clean, Moderate, or Very Dirty.</div>
+    <div class="line-speak">The image is sent to our backend, analyzed using Claude AI, and within seconds we get a result. The AI then automatically recommends the most suitable wash package. If the customer doesn't want to use AI, they can skip this step.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Step 3 — Select Service (/customer/book/service)</div>
+    <div class="line-speak">The service selection page shows all available packages with pricing, duration, and features. The AI-recommended package is marked with a purple Recommended badge. The customer can still pick any package they prefer.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Step 4 — Location &amp; Date (/customer/book/location)</div>
+    <div class="line-speak">The customer selects their service area from a dropdown — grouped by zone with the travel fee shown upfront. No hidden charges. Saved addresses appear at the top for quick reuse.</div>
+    <div class="line-speak">Once a date is selected, time slots load with real-time availability. Any slot already booked is greyed out and marked Unavailable. Past time slots are also disabled automatically.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Step 5 — Booking Summary (/customer/book/summary)</div>
+    <div class="line-speak">The summary page gives a full review before payment — vehicle info, service, location, date, time, and total broken down into service price plus travel fee. Every section has an Edit button that opens an inline modal to make changes without losing progress.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Step 6 — Payment (/customer/book/payment)</div>
+    <div class="line-speak">There are three payment options:</div>
+    <ul class="speak-list">
+      <li><strong>Credit/Debit Card</strong> — mock card form with card preview. 2-second processing animation, then booking confirmed with status Paid.</li>
+      <li><strong>Online Banking</strong> — DuitNow QR code displayed. Customer scans with any Malaysian banking app, then uploads their receipt (image or PDF). Booking created with status Pending Verification and admin is notified to verify.</li>
+      <li><strong>Cash</strong> — booking created immediately with status Pending. Payment collected at time of service.</li>
+    </ul>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Step 7 — Confirmation (/customer/book/confirmation)</div>
+    <div class="line-speak">The confirmation page shows a green checkmark and a full summary — booking reference ID, vehicle, service, date, time slot, address, total, and payment status. The customer also receives an automatic email confirmation to their registered email address.</div>
+    <div class="line-speak">The entire booking flow auto-saves as a draft, so if the customer closes the browser and comes back, their progress is restored.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ SECTION 4 ══════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div>
+      <div class="section-title">Customer Dashboard &amp; History</div>
+      <div class="section-subtitle">/customer/dashboard · /customer/history</div>
+    </div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Customer Dashboard</div>
+    <div class="line-speak">The customer dashboard greets the user by name, pulled live from their profile. The dark hero banner has a direct Book a Wash button front and center. Below are quick stats — fastest service, number of packages, and average rating.</div>
+    <div class="line-speak">The Our Services section shows all active packages from the database. Each card shows name, description, duration, and price. Clicking any card goes straight to the booking flow. There's a second call-to-action banner at the bottom keeping the booking action always visible.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Booking History</div>
+    <div class="line-action">Click "Booking History" in the sidebar → /customer/history.</div>
+    <div class="line-speak">The booking history page shows all the customer's bookings — past and upcoming — sorted newest to oldest. Each card shows: service name, color-coded status badge, booking ID, date and time slot, service address, vehicle, and payment status.</div>
+    <div class="line-speak">Status badge colors: Grey = Confirmed/Assigned · Purple = En Route · Yellow = In Progress · Teal = Completion Pending · Green = Completed · Red = Issue or Cancelled.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Reschedule</div>
+    <div class="line-speak">For bookings that are Pending, Confirmed, or Assigned, the customer sees a Reschedule button. It opens a modal to pick a new date — minimum one day ahead — and a new time slot. The booking updates immediately.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Cancel</div>
+    <div class="line-speak">The Cancel button shows a confirmation modal before cancelling — this prevents accidental cancellations. The action cannot be undone.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Rating &amp; Review</div>
+    <div class="line-speak">Once a booking is marked Completed, a Rate this wash button appears. The customer taps stars to rate 1–5 and optionally leaves a written comment. When submitted, both the admin and the assigned provider receive a notification and email.</div>
+    <div class="line-speak">The button is replaced with a green Reviewed badge. If the admin replies to the review, the reply appears directly below the badge — keeping the conversation in one place.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ SECTION 5 ══════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <div>
+      <div class="section-title">Admin Portal</div>
+      <div class="section-subtitle">Login as admin → auto-routed to /admin/dashboard</div>
+    </div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Admin Dashboard</div>
+    <div class="line-speak">The admin portal is a completely separate experience. Five live stats: Total Bookings, Today's Bookings, Pending, Unassigned Today, and Total Revenue from completed bookings.</div>
+    <div class="line-speak">If there are unassigned bookings today, the Unassigned stat card turns orange and an alert banner appears with an Assign Now shortcut. The Provider Availability strip shows each provider's status — green dot if available, amber dot if on approved leave — with their job count for today.</div>
+    <div class="line-speak">Today's Bookings are sorted by time slot. Unassigned bookings have an orange left border so they stand out. Below that, Recent Bookings shows the 8 most recent across all time.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Bookings Management — /admin/bookings</div>
+    <div class="line-speak">The main operational hub. Two tabs: Today and All Bookings, with search, status filter, date filter, and provider filter.</div>
+    <div class="line-speak"><strong>Assigning a provider:</strong> Select from the dropdown — the booking status changes to Assigned, and both the customer and provider receive an in-app notification and email automatically.</div>
+    <div class="line-speak"><strong>Online banking verification:</strong> Bookings paid via online banking show Pending Verification. The admin can click View Receipt to see the uploaded transfer receipt, then Verify Payment to approve it. The customer is immediately notified via in-app and email.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">User Management — /admin/users</div>
+    <div class="line-speak">Shows every registered account — customers, providers, and admins — with name, email, phone, role badge, and booking count. The admin can create new service provider accounts directly, generating a temporary password shown once. Accounts can be deactivated or deleted.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Package Management — /admin/packages</div>
+    <div class="line-speak">Manage service packages that appear on the landing page and in the booking flow. Changes reflect immediately across the system. The admin can add, edit, toggle active/inactive, or delete packages.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Reviews — /admin/reviews</div>
+    <div class="line-speak">All customer reviews with star rating, comment, customer name, service, and assigned provider. Filterable by rating or provider. The admin can reply to any review — the reply appears on the customer's booking history page.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Leave Management — /admin/leave</div>
+    <div class="line-speak">All provider leave requests organized into Pending, Approved, and Rejected tabs. Leave type is color-coded: Medical = red, Emergency = orange, Annual = blue, Personal = purple. The admin approves or rejects with one click. Rejections can include an explanatory note. The provider receives an email and in-app notification immediately.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Reports — /admin/reports</div>
+    <div class="line-speak">Business-level overview with a Booking Status Breakdown pie chart and a Monthly Revenue bar chart. Key metrics include total revenue, completed jobs, average booking value, and overall average star rating. Filterable by date range and service type. Exportable as CSV or PDF.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ SECTION 6 ══════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">6</div>
+    <div>
+      <div class="section-title">Service Provider Portal</div>
+      <div class="section-subtitle">Login as provider → auto-routed to /provider/dashboard</div>
+    </div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Provider Dashboard</div>
+    <div class="line-speak">Service providers have their own dedicated portal. The dashboard shows four personal stats: Today's Jobs, In Progress, Total Completed, and Average Rating from customer reviews.</div>
+    <div class="line-speak">Two tabs: Today's Jobs (only bookings scheduled today that still need action) and Active Jobs (all assigned bookings not yet completed). Each entry shows the service, time slot, vehicle details, and the address as a clickable Google Maps link.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Job Detail Page — /provider/jobs/[id]</div>
+    <div class="line-action">Click the eye icon on any job to open its detail page.</div>
+    <div class="line-speak">Shows all job information: customer name, vehicle, service package, amount, full service address with Open in Google Maps link, scheduled date, and time slot. If the customer used AI analysis, the detected dirt level is shown as a tag on the package card.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Progressing Job Status</div>
+    <div class="line-speak">Status moves in a locked sequence: Assigned → En Route → In Progress → Completion Pending → Completed. Status buttons are time-locked — the provider cannot start before the scheduled time slot. If they try early, the button is greyed out with a message like "Actions available from 10:00 AM".</div>
+    <div class="line-speak">Clicking Start Journey (En Route) updates the status and sends the customer a real-time notification. Clicking Begin Detailing (In Progress) notifies them again.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Completing a Job</div>
+    <div class="line-speak">When done, the provider uploads a proof of completion photo — taken directly from their phone camera. The image is automatically compressed and uploaded to storage. Clicking Complete &amp; Submit Verification sends the proof to the admin and sets status to Completion Pending. The admin receives both an in-app notification and email to review. A success modal confirms the submission.</div>
+    <div class="line-speak">If the customer has already left a review, the star rating and comment appear at the bottom of the job detail page — direct feedback on their work.</div>
+  </div>
+
+  <div class="sub no-break">
+    <div class="sub-title">Leave Management — /provider/leave</div>
+    <div class="line-speak">Providers submit leave requests from this page. Three count cards: Pending, Approved, Rejected. Clicking Request Leave opens a modal — pick a date (minimum tomorrow), leave type: Medical, Emergency, Annual, Personal, or Other, and an optional note.</div>
+    <div class="line-speak">After submitting, the admin receives an in-app notification and email immediately. When the admin decides, the provider gets an email and in-app notification with the outcome. If rejected with a note, the admin's note shows directly on the request card.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ SECTION 7 ══════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">7</div>
+    <div>
+      <div class="section-title">Closing Summary</div>
+      <div class="section-subtitle">Wrap-up for the full demo</div>
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <p>That covers the full Das Auto Spa system.</p>
+    <p>We have three separate portals — customer, admin, and service provider — all powered by a single database with real-time data across every view.</p>
+    <p>Customers can book in minutes, track their wash from start to finish, reschedule, and leave a review. Admins have full operational control — bookings, payments, providers, packages, users, leave, and reports. Providers get a clean mobile-friendly interface to manage their daily jobs and submit completion proof on-site.</p>
+    <p>Every key event in the system triggers automatic in-app and email notifications — so all three parties are always kept in the loop without anyone having to chase for updates.</p>
+    <p>The standout features are the AI car analysis that recommends a service based on a photo, three payment options including online banking with receipt verification, and the live availability system that prevents double-booking of time slots.</p>
+    <p>The whole system is built on Next.js 16 with Supabase as the backend — scalable, secure, and production-ready.</p>
+  </div>
+</div>
+
+</body>
+</html>

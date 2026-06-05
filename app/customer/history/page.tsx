@@ -1,785 +1,411 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-    Calendar,
-    MapPin,
-    Car,
-    Clock,
-    DollarSign,
-    CheckCircle,
-    AlertCircle,
-    MoreVertical,
-    Filter,
-    Search,
-    Download,
-    RefreshCw,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar, MapPin, Car, Clock, X, Star } from "lucide-react";
 import supabase from "@/lib/supabase";
+import { useUser } from "@/hooks/user-provider";
 
-// --- Types ---
+type BookingStatus = "Pending" | "Confirmed" | "Assigned" | "En Route" | "In Progress" | "Completion Pending" | "Issue/Delayed" | "Completed" | "Cancelled";
+
 interface Booking {
-    id: string;
-    bookingId: string;
-    service: string;
-    date: string;
-    timeSlot: string;
-    address: string;
-    carDetails: string;
-    amount: number;
-    status:
-        | "Pending"
-        | "Confirmed"
-        | "Assigned"
-        | "En Route"
-        | "In Progress"
-        | "Completion Pending"
-        | "Issue/Delayed"
-        | "Completed"
-        | "Cancelled";
-    paymentStatus: string;
-    serviceType?: "basic" | "premium" | "ultimate";
+  id: string;
+  bookingId: string;
+  service: string;
+  date: string;
+  timeSlot: string;
+  address: string;
+  carDetails: string;
+  amount: number;
+  status: BookingStatus;
+  paymentStatus: string;
+  proofOfCompletion?: string;
 }
 
-interface BookingRow {
-    id: string;
-    booking_id: string;
-    service_name: string;
-    scheduled_date: string;
-    time_slot: string;
-    address: string;
-    car_details: string;
-    amount: number;
-    status: Booking["status"];
-    payment_status: string | null;
-    created_at: string;
-}
+const timeSlots = [
+  "08:00 AM - 09:00 AM", "09:00 AM - 10:00 AM", "10:00 AM - 11:00 AM",
+  "11:00 AM - 12:00 PM", "12:00 PM - 01:00 PM", "01:00 PM - 02:00 PM",
+  "02:00 PM - 03:00 PM", "03:00 PM - 04:00 PM", "04:00 PM - 05:00 PM",
+  "05:00 PM - 06:00 PM",
+];
+
+const getStatusColor = (status: BookingStatus) => {
+  switch (status) {
+    case "Completed": return "bg-green-100 text-green-700";
+    case "Confirmed": case "Assigned": return "bg-gray-100 text-gray-900";
+    case "En Route": return "bg-purple-100 text-purple-700";
+    case "In Progress": return "bg-yellow-100 text-yellow-700";
+    case "Completion Pending": return "bg-teal-100 text-teal-700";
+    case "Issue/Delayed": case "Cancelled": return "bg-red-100 text-red-700";
+    default: return "bg-gray-100 text-gray-700";
+  }
+};
+
+const reschedulableStatuses: BookingStatus[] = ["Pending", "Confirmed", "Assigned"];
 
 export default function BookingHistoryPage() {
-    const router = useRouter();
-    const [localBookings, setLocalBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [localName, setLocalName] = useState("");
-    const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<string>("all");
-    const [activeTab, setActiveTab] = useState("upcoming");
+  const { userId } = useUser();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterDate, setFilterDate] = useState("");
 
-    // --- Actions ---
+  const [rescheduleTarget, setRescheduleTarget] = useState<Booking | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTimeSlot, setRescheduleTimeSlot] = useState("");
+  const [rescheduling, setRescheduling] = useState(false);
 
-    const handleBookNow = () => {
-        router.push("/customer/book/car-details");
+  const [ratingTarget, setRatingTarget] = useState<Booking | null>(null);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [ratedBookingIds, setRatedBookingIds] = useState<Set<string>>(new Set());
+  const [reviewDataByBookingId, setReviewDataByBookingId] = useState<Record<string, { rating: number; comment: string | null; admin_reply: string | null }>>({});
+
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const load = async () => {
+      const { data } = await supabase
+        .from("bookings")
+        .select("id, booking_id, service_name, scheduled_date, time_slot, address, car_details, amount, status, payment_status, proof_of_completion_url")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        setBookings(data.map((row: any) => ({
+          id: row.id,
+          bookingId: row.booking_id,
+          service: row.service_name,
+          date: row.scheduled_date,
+          timeSlot: row.time_slot,
+          address: row.address,
+          carDetails: row.car_details,
+          amount: Number(row.amount),
+          status: row.status,
+          paymentStatus: row.payment_status || "",
+          proofOfCompletion: row.proof_of_completion_url || undefined,
+        })));
+      }
+
+      const { data: reviewData } = await supabase
+        .from("reviews")
+        .select("booking_id, rating, comment, admin_reply")
+        .eq("user_id", userId);
+
+      if (reviewData) {
+        const ids = new Set<string>();
+        const map: Record<string, { rating: number; comment: string | null; admin_reply: string | null }> = {};
+        reviewData.forEach((r: any) => {
+          ids.add(r.booking_id);
+          map[r.booking_id] = { rating: r.rating, comment: r.comment, admin_reply: r.admin_reply };
+        });
+        setRatedBookingIds(ids);
+        setReviewDataByBookingId(map);
+      }
+
+      setLoading(false);
     };
 
-    const handleCancelBooking = async (id: string) => {
-        const confirmCancel = window.confirm(
-            "Are you sure you want to cancel this booking?"
-        );
-        if (!confirmCancel) return;
+    load();
+  }, [userId]);
 
-        // 1. Optimistic UI Update
-        setLocalBookings((prev) =>
-            prev.map((b) => (b.id === id ? { ...b, status: "Cancelled" } : b))
-        );
+  const sortedBookings = [...bookings]
+    .filter((b) => !filterDate || b.date === filterDate)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        // 2. DB Update
-        const { error } = await supabase
-            .from("bookings")
-            .update({ status: "Cancelled" })
-            .eq("id", id);
+  const minRescheduleDate = new Date(Date.now() + 86400000).toISOString().split("T")[0];
 
-        if (error) {
-            console.error("Error cancelling booking:", error);
-            // Revert on error (optional, usually fetch again)
-            alert("Failed to cancel booking. Please try again.");
-            loadBookings(); // Reload data to be safe
-        }
-    };
+  const handleReschedule = async () => {
+    if (!rescheduleTarget || !rescheduleDate || !rescheduleTimeSlot) return;
+    setRescheduling(true);
+    const { error } = await supabase
+      .from("bookings")
+      .update({ scheduled_date: rescheduleDate, time_slot: rescheduleTimeSlot })
+      .eq("id", rescheduleTarget.id);
+    if (!error) {
+      setBookings((prev) =>
+        prev.map((b) => b.id === rescheduleTarget.id ? { ...b, date: rescheduleDate, timeSlot: rescheduleTimeSlot } : b)
+      );
+      setRescheduleTarget(null);
+    }
+    setRescheduling(false);
+  };
 
-    const loadBookings = async () => {
-        setLoading(true);
-
-        /* 1️⃣ AUTH GUARD */
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-
-        if (!user || authError) {
-            router.push("/login");
-            return;
-        }
-
-        /* 2️⃣ LOAD USER PROFILE */
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", user.id)
-            .single();
-
-        if (profile?.full_name) {
-            setLocalName(profile.full_name);
-        }
-
-        /* 3️⃣ FETCH BOOKINGS */
-        const { data, error } = await supabase
-            .from("bookings")
-            .select(
-                `
-                id,
-                booking_id,
-                service_name,
-                scheduled_date,
-                time_slot,
-                address,
-                car_details,
-                amount,
-                status,
-                payment_status,
-                created_at
-            `
-            )
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false });
-
-        if (error) {
-            console.error("Failed to fetch bookings:", error);
-            setLocalBookings([]);
-            setLoading(false);
-            return;
-        }
-
-        /* 4️⃣ MAP DB → UI MODEL */
-        const mapped: Booking[] = data.map((row: BookingRow) => ({
-            id: row.id,
-            bookingId: row.booking_id,
-            service: row.service_name,
-            date: new Date(row.scheduled_date).toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-            }),
-            timeSlot: row.time_slot,
-            address: row.address,
-            carDetails: row.car_details,
-            amount: Number(row.amount),
-            status: row.status,
-            paymentStatus: row.payment_status || "Pending",
-            serviceType: row.service_name.toLowerCase().includes("premium")
-                ? "premium"
-                : row.service_name.toLowerCase().includes("ultimate")
-                ? "ultimate"
-                : "basic",
-        }));
-
-        setLocalBookings(mapped);
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        loadBookings();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // --- Helpers ---
-
-    const getStatusColor = (status: Booking["status"]) => {
-        switch (status) {
-            case "Completed":
-                return {
-                    bg: "bg-emerald-50",
-                    text: "text-emerald-700",
-                    dot: "bg-emerald-500",
-                    icon: CheckCircle,
-                };
-            case "Confirmed":
-            case "Assigned":
-                return {
-                    bg: "bg-blue-50",
-                    text: "text-blue-700",
-                    dot: "bg-blue-500",
-                    icon: Clock,
-                };
-            case "En Route":
-                return {
-                    bg: "bg-purple-50",
-                    text: "text-purple-700",
-                    dot: "bg-purple-500",
-                    icon: Car,
-                };
-            case "In Progress":
-                return {
-                    bg: "bg-amber-50",
-                    text: "text-amber-700",
-                    dot: "bg-amber-500",
-                    icon: RefreshCw,
-                };
-            case "Completion Pending":
-                return {
-                    bg: "bg-teal-50",
-                    text: "text-teal-700",
-                    dot: "bg-teal-500",
-                    icon: Clock,
-                };
-            case "Issue/Delayed":
-            case "Cancelled":
-                return {
-                    bg: "bg-red-50",
-                    text: "text-red-700",
-                    dot: "bg-red-500",
-                    icon: AlertCircle,
-                };
-            default:
-                return {
-                    bg: "bg-gray-50",
-                    text: "text-gray-700",
-                    dot: "bg-gray-500",
-                    icon: Clock,
-                };
-        }
-    };
-
-    const getServiceTypeColor = (type?: string) => {
-        switch (type) {
-            case "premium":
-                return {
-                    border: "border-l-amber-500",
-                    bg: "bg-amber-50",
-                    text: "text-amber-700",
-                };
-            case "ultimate":
-                return {
-                    border: "border-l-purple-500",
-                    bg: "bg-purple-50",
-                    text: "text-purple-700",
-                };
-            default:
-                return {
-                    border: "border-l-blue-500",
-                    bg: "bg-blue-50",
-                    text: "text-blue-700",
-                };
-        }
-    };
-
-    const filteredBookings = localBookings.filter((booking) => {
-        const matchesSearch =
-            searchTerm === "" ||
-            booking.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            booking.bookingId
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-            booking.carDetails.toLowerCase().includes(searchTerm.toLowerCase());
-
-        const matchesStatus =
-            statusFilter === "all" || booking.status === statusFilter;
-
-        const isUpcoming = [
-            "Pending",
-            "Confirmed",
-            "Assigned",
-            "En Route",
-            "In Progress",
-            "Completion Pending",
-        ].includes(booking.status);
-        const matchesTab = activeTab === "upcoming" ? isUpcoming : !isUpcoming;
-
-        return matchesSearch && matchesStatus && matchesTab;
+  const handleSubmitRating = async () => {
+    if (!ratingTarget || ratingValue === 0) return;
+    setSubmittingRating(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/customer/reviews", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ bookingId: ratingTarget.id, rating: ratingValue, comment: ratingComment.trim() || null }),
     });
+    if (res.ok) {
+      setRatedBookingIds((prev) => new Set([...prev, ratingTarget.id]));
+      setReviewDataByBookingId((prev) => ({
+        ...prev,
+        [ratingTarget.id]: { rating: ratingValue, comment: ratingComment.trim() || null, admin_reply: null },
+      }));
+      setRatingTarget(null);
+    }
+    setSubmittingRating(false);
+  };
 
-    const stats = {
-        total: localBookings.length,
-        upcoming: localBookings.filter((b) =>
-            [
-                "Pending",
-                "Confirmed",
-                "Assigned",
-                "En Route",
-                "In Progress",
-                "Completion Pending",
-            ].includes(b.status)
-        ).length,
-        completed: localBookings.filter((b) => b.status === "Completed").length,
-        totalSpent: localBookings
-            .filter((b) => b.status !== "Cancelled")
-            .reduce((sum, b) => sum + b.amount, 0),
-    };
+  const handleCancelConfirmed = async (id: string) => {
+    setCancelConfirmId(null);
+    setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: "Cancelled" } : b));
+    await supabase.from("bookings").update({ status: "Cancelled" }).eq("id", id);
+  };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-            <div className="container px-4 md:px-8 py-6">
-                <div className="gap-6">
-                    {/* Main Content */}
-                    <div className="relative mb-6">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                        <Input
-                            placeholder="Search bookings..."
-                            className="pl-9 w-64 bg-white"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <div className="lg:col-span-3 space-y-6">
-                        {/* Stats Overview */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-                                <CardContent className="p-4">
-                                    <div className="text-sm font-medium text-blue-600 mb-1">
-                                        Total Bookings
-                                    </div>
-                                    <div className="text-2xl font-bold text-gray-900">
-                                        {stats.total}
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                        All time
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-                                <CardContent className="p-4">
-                                    <div className="text-sm font-medium text-amber-600 mb-1">
-                                        Upcoming
-                                    </div>
-                                    <div className="text-2xl font-bold text-gray-900">
-                                        {stats.upcoming}
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                        Awaiting service
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
-                                <CardContent className="p-4">
-                                    <div className="text-sm font-medium text-emerald-600 mb-1">
-                                        Completed
-                                    </div>
-                                    <div className="text-2xl font-bold text-gray-900">
-                                        {stats.completed}
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                        Served & happy
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-                                <CardContent className="p-4">
-                                    <div className="text-sm font-medium text-purple-600 mb-1">
-                                        Total Spent
-                                    </div>
-                                    <div className="text-2xl font-bold text-gray-900">
-                                        RM {stats.totalSpent.toFixed(2)}
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                        On car care
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Main Card */}
-                        <Card className="border-0 shadow-lg">
-                            <CardHeader className="pb-3">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div>
-                                        <CardTitle className="text-2xl font-bold text-gray-900">
-                                            Booking History
-                                        </CardTitle>
-                                        <CardDescription>
-                                            View and manage your past and
-                                            upcoming bookings
-                                        </CardDescription>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                >
-                                                    <Filter className="mr-2 h-4 w-4" />
-                                                    Filter
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuLabel>
-                                                    Status
-                                                </DropdownMenuLabel>
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        setStatusFilter("all")
-                                                    }
-                                                >
-                                                    All Statuses
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        setStatusFilter(
-                                                            "Confirmed"
-                                                        )
-                                                    }
-                                                >
-                                                    Confirmed
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        setStatusFilter(
-                                                            "Completed"
-                                                        )
-                                                    }
-                                                >
-                                                    Completed
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        setStatusFilter(
-                                                            "Cancelled"
-                                                        )
-                                                    }
-                                                >
-                                                    Cancelled
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        <Button variant="outline" size="sm">
-                                            <Download className="mr-2 h-4 w-4" />
-                                            Export
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardHeader>
-
-                            <CardContent>
-                                <Tabs
-                                    defaultValue="upcoming"
-                                    className="w-full"
-                                    onValueChange={setActiveTab}
-                                >
-                                    <TabsList className="grid w-full md:w-auto grid-cols-2">
-                                        <TabsTrigger
-                                            value="upcoming"
-                                            className="flex items-center gap-2"
-                                        >
-                                            <Clock className="h-4 w-4" />
-                                            Upcoming ({stats.upcoming})
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="past"
-                                            className="flex items-center gap-2"
-                                        >
-                                            <RefreshCw className="h-4 w-4" />
-                                            Past (
-                                            {localBookings.length -
-                                                stats.upcoming}
-                                            )
-                                        </TabsTrigger>
-                                    </TabsList>
-
-                                    <div className="mt-6">
-                                        {loading ? (
-                                            <div className="space-y-4">
-                                                {[1, 2, 3].map((i) => (
-                                                    <Skeleton
-                                                        key={i}
-                                                        className="h-40 w-full rounded-2xl"
-                                                    />
-                                                ))}
-                                            </div>
-                                        ) : filteredBookings.length === 0 ? (
-                                            <Card className="border-dashed">
-                                                <CardContent className="p-12 text-center">
-                                                    <Car className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                                        No bookings found
-                                                    </h3>
-                                                    <p className="text-gray-500 mb-4">
-                                                        {searchTerm
-                                                            ? "Try a different search term"
-                                                            : "Start by booking your first car wash!"}
-                                                    </p>
-                                                    <Button
-                                                        onClick={handleBookNow}
-                                                    >
-                                                        <Car className="mr-2 h-4 w-4" />
-                                                        Book Now
-                                                    </Button>
-                                                </CardContent>
-                                            </Card>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {/* Render content based on filtered results */}
-                                                <TabsContent
-                                                    value="upcoming"
-                                                    className="mt-0 space-y-4"
-                                                >
-                                                    {filteredBookings.map(
-                                                        (booking) => (
-                                                            <BookingCard
-                                                                key={booking.id}
-                                                                booking={
-                                                                    booking
-                                                                }
-                                                                getStatusColor={
-                                                                    getStatusColor
-                                                                }
-                                                                getServiceTypeColor={
-                                                                    getServiceTypeColor
-                                                                }
-                                                                onCancelBooking={
-                                                                    handleCancelBooking
-                                                                }
-                                                            />
-                                                        )
-                                                    )}
-                                                </TabsContent>
-                                                <TabsContent
-                                                    value="past"
-                                                    className="mt-0 space-y-4"
-                                                >
-                                                    {filteredBookings.map(
-                                                        (booking) => (
-                                                            <BookingCard
-                                                                key={booking.id}
-                                                                booking={
-                                                                    booking
-                                                                }
-                                                                getStatusColor={
-                                                                    getStatusColor
-                                                                }
-                                                                getServiceTypeColor={
-                                                                    getServiceTypeColor
-                                                                }
-                                                                onCancelBooking={
-                                                                    handleCancelBooking
-                                                                }
-                                                            />
-                                                        )
-                                                    )}
-                                                </TabsContent>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Tabs>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </div>
+  return (
+    <main className="flex-1 overflow-y-auto p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-4">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">Booking History</h1>
+          <p className="text-gray-500">View and manage your past and upcoming bookings</p>
         </div>
-    );
-}
 
-// Booking Card Component
-function BookingCard({
-    booking,
-    getStatusColor,
-    getServiceTypeColor,
-    onCancelBooking,
-}: {
-    booking: Booking;
-    getStatusColor: (status: Booking["status"]) => any;
-    getServiceTypeColor: (type?: string) => any;
-    onCancelBooking: (id: string) => void;
-}) {
-    const statusColors = getStatusColor(booking.status);
-    const serviceTypeColors = getServiceTypeColor(booking.serviceType);
-    const StatusIcon = statusColors.icon;
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+          />
+          {filterDate && (
+            <button
+              onClick={() => setFilterDate("")}
+              className="px-3 py-2 text-sm text-gray-500 hover:text-gray-900 border border-gray-200 rounded-xl bg-white shadow-sm hover:bg-gray-50 transition-all"
+            >
+              Clear
+            </button>
+          )}
+        </div>
 
-    return (
-        <Card
-            className={`overflow-hidden ${serviceTypeColors.border} border-l-4 hover:shadow-md transition-all`}
-        >
-            <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                    <div className="flex-1">
-                        <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-4">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Badge
-                                        variant="outline"
-                                        className={`${serviceTypeColors.bg} ${serviceTypeColors.text} border-transparent`}
-                                    >
-                                        {booking.serviceType?.toUpperCase() ||
-                                            "BASIC"}
-                                    </Badge>
-                                    <span className="text-sm font-mono text-gray-400">
-                                        #{booking.bookingId}
-                                    </span>
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-900">
-                                    {booking.service}
-                                </h3>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    {booking.carDetails}
-                                </p>
-                            </div>
-                            <div className="flex items-start gap-2">
-                                <Badge
-                                    className={`${statusColors.bg} ${statusColors.text} gap-1.5 hover:bg-opacity-80`}
-                                >
-                                    <StatusIcon className="h-3 w-3" />
-                                    {booking.status}
-                                </Badge>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8"
-                                        >
-                                            <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem>
-                                            View Details
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            Reschedule
-                                        </DropdownMenuItem>
-                                        {booking.status !== "Completed" &&
-                                            booking.status !== "Cancelled" && (
-                                                <DropdownMenuItem
-                                                    className="text-red-600"
-                                                    onClick={() =>
-                                                        onCancelBooking(
-                                                            booking.id
-                                                        )
-                                                    }
-                                                >
-                                                    Cancel Booking
-                                                </DropdownMenuItem>
-                                            )}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-50 rounded-lg">
-                                    <Calendar className="h-4 w-4 text-blue-600" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 font-medium">
-                                        Date & Time
-                                    </p>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {booking.date}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        {booking.timeSlot}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-red-50 rounded-lg">
-                                    <MapPin className="h-4 w-4 text-red-600" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 font-medium">
-                                        Location
-                                    </p>
-                                    <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                                        {booking.address}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-indigo-50 rounded-lg">
-                                    <Car className="h-4 w-4 text-indigo-600" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 font-medium">
-                                        Vehicle
-                                    </p>
-                                    <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                                        {booking.carDetails}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-50 rounded-lg">
-                                    <DollarSign className="h-4 w-4 text-emerald-600" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 font-medium">
-                                        Payment
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-lg font-bold text-gray-900">
-                                            RM {booking.amount}
-                                        </p>
-                                        <Badge
-                                            variant={
-                                                booking.paymentStatus === "Paid"
-                                                    ? "default"
-                                                    : "outline"
-                                            }
-                                            className="text-xs"
-                                        >
-                                            {booking.paymentStatus || "Pending"}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        {sortedBookings.length === 0 ? (
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 text-center">
+            <Car className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+            <p className="text-gray-500 font-medium">
+              {loading ? "Loading bookings..." : filterDate ? "No bookings on this date" : "No bookings yet"}
+            </p>
+            <p className="text-sm text-gray-400">{loading || filterDate ? "" : "Your car wash journey starts here!"}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sortedBookings.map((booking) => (
+              <div key={booking.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-all">
+                <div className="flex flex-col md:flex-row md:items-start justify-between mb-6 gap-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-bold text-gray-800">{booking.service}</h3>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>{booking.status}</span>
                     </div>
+                    <p className="text-sm font-mono text-gray-400">ID: {booking.bookingId}</p>
+                  </div>
+                  <span className="text-2xl font-bold text-gray-900">RM {booking.amount}</span>
                 </div>
 
-                {booking.status === "Issue/Delayed" && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4 text-red-600" />
-                            <p className="text-sm font-medium text-red-700">
-                                Service Delay - Our team will contact you
-                                shortly
-                            </p>
-                        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-gray-700 shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-400 font-semibold uppercase">Schedule</p>
+                      <p className="text-sm text-gray-700 font-medium">{booking.date}</p>
+                      <p className="text-xs text-gray-500">{booking.timeSlot}</p>
                     </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-red-500 shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-400 font-semibold uppercase">Location</p>
+                      <p className="text-sm text-gray-700 font-medium">{booking.address}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Car className="w-5 h-5 text-indigo-500 shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-400 font-semibold uppercase">Vehicle</p>
+                      <p className="text-sm text-gray-700 font-medium">{booking.carDetails}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                      <div className={`w-2.5 h-2.5 rounded-full ${booking.paymentStatus === "Paid" ? "bg-green-500" : "bg-yellow-500"}`} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 font-semibold uppercase">Payment</p>
+                      <p className="text-sm text-gray-700 font-medium">{booking.paymentStatus || "Unpaid"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {booking.proofOfCompletion && (
+                  <div className="mt-6 pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-400 font-semibold uppercase mb-3">Proof of Completion</p>
+                    <img src={booking.proofOfCompletion} alt="Proof of completion" className="w-full max-w-sm rounded-xl border border-gray-100 object-cover" />
+                  </div>
                 )}
 
-                {["Confirmed", "Assigned", "En Route"].includes(
-                    booking.status
-                ) && (
-                    <div className="mt-4 flex items-center justify-between border-t pt-4">
-                        <Button variant="outline" size="sm">
-                            <Clock className="mr-2 h-4 w-4" />
-                            Track Service
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onCancelBooking(booking.id)}
-                        >
-                            Cancel Booking
-                        </Button>
-                    </div>
+                {reschedulableStatuses.includes(booking.status) && (
+                  <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => { setRescheduleTarget(booking); setRescheduleDate(booking.date); setRescheduleTimeSlot(booking.timeSlot); }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-50 text-gray-900 text-sm font-semibold hover:bg-gray-100 transition-all"
+                    >
+                      <Clock className="w-4 h-4" /> Reschedule
+                    </button>
+                    <button
+                      onClick={() => setCancelConfirmId(booking.id)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-all"
+                    >
+                      <X className="w-4 h-4" /> Cancel
+                    </button>
+                  </div>
                 )}
-            </CardContent>
-        </Card>
-    );
+
+                {booking.status === "Completed" && !ratedBookingIds.has(booking.id) && (
+                  <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => { setRatingTarget(booking); setRatingValue(0); setRatingComment(""); }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-50 text-yellow-600 text-sm font-semibold hover:bg-yellow-100 transition-all"
+                    >
+                      <Star className="w-4 h-4" /> Rate this wash
+                    </button>
+                  </div>
+                )}
+
+                {booking.status === "Completed" && ratedBookingIds.has(booking.id) && (
+                  <div className="mt-6 pt-4 border-t border-gray-100">
+                    <span className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-50 text-green-600 text-sm font-semibold w-fit">
+                      <Star className="w-4 h-4 fill-green-500" /> Reviewed
+                    </span>
+                    {reviewDataByBookingId[booking.id]?.admin_reply && (
+                      <div className="mt-3 ml-2 pl-4 border-l-2 border-gray-200 bg-gray-50 rounded-r-xl p-3">
+                        <p className="text-xs font-bold text-gray-900 mb-1">Owner's Reply</p>
+                        <p className="text-sm text-blue-800">{reviewDataByBookingId[booking.id].admin_reply}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Reschedule Modal */}
+      {rescheduleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+            <h2 className="text-xl font-bold text-gray-800 mb-1">Reschedule Booking</h2>
+            <p className="text-sm text-gray-500 mb-6">ID: {rescheduleTarget.bookingId} · {rescheduleTarget.service}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">New Date</label>
+                <input
+                  type="date"
+                  value={rescheduleDate}
+                  min={minRescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 focus:bg-white transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">New Time Slot</label>
+                <select
+                  value={rescheduleTimeSlot}
+                  onChange={(e) => setRescheduleTimeSlot(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 focus:bg-white transition-all"
+                >
+                  <option value="">Select a time slot</option>
+                  {timeSlots.map((slot) => (
+                    <option key={slot} value={slot}>{slot}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setRescheduleTarget(null)} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-all">
+                Cancel
+              </button>
+              <button
+                disabled={!rescheduleDate || !rescheduleTimeSlot || rescheduling}
+                onClick={handleReschedule}
+                className="flex-1 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all"
+              >
+                {rescheduling ? "Rescheduling..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rating Modal */}
+      {ratingTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+            <h2 className="text-xl font-bold text-gray-800 mb-1">Rate Your Experience</h2>
+            <p className="text-sm text-gray-500 mb-6">{ratingTarget.service} · {ratingTarget.bookingId}</p>
+            <div className="flex gap-2 justify-center mb-6">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} type="button" onClick={() => setRatingValue(star)} className="focus:outline-none transition-transform hover:scale-110">
+                  <Star className={`w-10 h-10 transition-all ${star <= ratingValue ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                </button>
+              ))}
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Comments <span className="text-gray-400 font-normal">(Optional)</span></label>
+              <textarea
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                placeholder="Tell us about your experience..."
+                rows={3}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 focus:bg-white transition-all resize-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setRatingTarget(null)} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-all">
+                Skip
+              </button>
+              <button
+                disabled={ratingValue === 0 || submittingRating}
+                onClick={handleSubmitRating}
+                className="flex-1 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all"
+              >
+                {submittingRating ? "Submitting..." : "Submit Review"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {cancelConfirmId && (() => {
+        const booking = bookings.find((b) => b.id === cancelConfirmId);
+        if (!booking) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+              <div className="flex items-center justify-center w-14 h-14 rounded-full bg-red-100 mx-auto mb-5">
+                <X className="w-7 h-7 text-red-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 text-center mb-2">Cancel Booking?</h2>
+              <p className="text-sm text-gray-500 text-center mb-1">{booking.service}</p>
+              <p className="text-sm font-mono text-gray-400 text-center mb-6">ID: {booking.bookingId}</p>
+              <p className="text-sm text-gray-600 text-center mb-8">This action cannot be undone. Your booking will be permanently cancelled.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setCancelConfirmId(null)} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-all">
+                  Keep Booking
+                </button>
+                <button onClick={() => handleCancelConfirmed(cancelConfirmId)} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all">
+                  Yes, Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </main>
+  );
 }

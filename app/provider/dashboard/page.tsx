@@ -2,460 +2,285 @@
 
 import { useEffect, useState } from "react";
 import {
-    MapPin,
-    Calendar,
-    Car,
-    Navigation,
-    CheckCircle,
-    Clock,
-    Eye,
+  Calendar, Car, Navigation, CheckCircle,
+  Clock, Eye, Star,
 } from "lucide-react";
-import React from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardFooter } from "@/components/ui/card";
 import supabase from "@/lib/supabase";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { useUser } from "@/hooks/user-provider";
+import Link from "next/link";
+
+type BookingStatus = "Pending" | "Confirmed" | "Assigned" | "En Route" | "In Progress" | "Completion Pending" | "Issue/Delayed" | "Completed" | "Cancelled";
 
 interface Booking {
-    id: string;
-    bookingId: string;
-    userId: string;
-    customerName: string;
-    service: string;
-    date: string;
-    timeSlot: string;
-    address: string;
-    carDetails: string;
-    amount: number;
-    status:
-        | "Pending"
-        | "Confirmed"
-        | "Assigned"
-        | "En Route"
-        | "In Progress"
-        | "Completed"
-        | "Cancelled"
-        | "Issue/Delayed";
-    paymentMethod: string;
-    paymentStatus: string;
-    assignedTo?: string;
+  id: string;
+  bookingId: string;
+  customerName: string;
+  service: string;
+  date: string;
+  timeSlot: string;
+  address: string;
+  carDetails: string;
+  amount: number;
+  status: BookingStatus;
+  paymentMethod: string;
+  paymentStatus: string;
 }
 
-export default function Page() {
-    const [providerName, setProviderName] = useState("");
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(
-        null
-    );
-    const [proofImage, setProofImage] = useState<File | null>(null);
-    const [uploading, setUploading] = useState(false);
+const getStatusColor = (status: BookingStatus) => {
+  switch (status) {
+    case "Completed": return "bg-green-100 text-green-700 border-green-300";
+    case "Confirmed": return "bg-gray-100 text-gray-900 border-gray-300";
+    case "Assigned": return "bg-blue-100 text-blue-700 border-blue-300";
+    case "En Route": return "bg-purple-100 text-purple-700 border-purple-300";
+    case "In Progress": return "bg-yellow-100 text-yellow-700 border-yellow-300";
+    case "Completion Pending": return "bg-teal-100 text-teal-700 border-teal-300";
+    case "Cancelled": case "Issue/Delayed": return "bg-red-100 text-red-700 border-red-300";
+    default: return "bg-gray-100 text-gray-700 border-gray-300";
+  }
+};
 
-    useEffect(() => {
-        const load = async () => {
-            setLoading(true);
+const today = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+})();
 
-            let { data: auth } = await supabase.auth.getUser();
-            if (!auth.user) {
-                await supabase.auth.refreshSession();
-                ({ data: auth } = await supabase.auth.getUser());
-            }
-            if (!auth.user) return;
+export default function ProviderDashboardPage() {
+  const { userId, email, fullName } = useUser();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [reviewsByBookingId, setReviewsByBookingId] = useState<Record<string, number>>({});
+  const [dashboardTab, setDashboardTab] = useState<"today" | "all">("today");
 
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("full_name, email")
-                .eq("id", auth.user.id)
-                .single();
+  useEffect(() => {
+    if (!userId || !email) return;
 
-            setProviderName(profile?.full_name || "Provider");
+    const load = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("bookings")
+        .select("id, booking_id, customer_name, service_name, scheduled_date, time_slot, address, car_details, amount, status, payment_method, payment_status")
+        .or(`assigned_provider_id.eq.${userId},assigned_to.ilike.${email}`)
+        .order("created_at", { ascending: false });
 
-            const email = profile?.email || auth.user.email || "";
+      if (data) {
+        const mapped = data.map((row: any) => ({
+          id: row.id,
+          bookingId: row.booking_id,
+          customerName: row.customer_name,
+          service: row.service_name,
+          date: row.scheduled_date,
+          timeSlot: row.time_slot,
+          address: row.address,
+          carDetails: row.car_details,
+          amount: Number(row.amount),
+          status: row.status,
+          paymentMethod: row.payment_method || "",
+          paymentStatus: row.payment_status || "",
+        }));
+        setBookings(mapped);
 
-            const { data } = await supabase
-                .from("bookings")
-                .select("*")
-                .or(
-                    `assigned_provider_id.eq.${auth.user.id},assigned_to.ilike.${email}`
-                )
-                .order("created_at", { ascending: false });
-
-            if (data) {
-                setBookings(
-                    data.map((row: any) => ({
-                        id: row.id,
-                        bookingId: row.booking_id,
-                        userId: row.user_id,
-                        customerName: row.customer_name,
-                        service: row.service_name,
-                        date: row.scheduled_date,
-                        timeSlot: row.time_slot,
-                        address: row.address,
-                        carDetails: row.car_details,
-                        amount: Number(row.amount),
-                        status: row.status,
-                        paymentMethod: row.payment_method || "",
-                        paymentStatus: row.payment_status || "",
-                        assignedTo: row.assigned_to || undefined,
-                    }))
-                );
-            }
-
-            setLoading(false);
-        };
-
-        load();
-    }, []);
-
-    const updateStatus = async (id: string, status: Booking["status"]) => {
-        await supabase.from("bookings").update({ status }).eq("id", id);
-
-        setBookings((prev) =>
-            prev.map((b) => (b.id === id ? { ...b, status } : b))
-        );
-    };
-
-    const handleUpdateStatus = async (
-        id: string,
-        status: Booking["status"]
-    ) => {
-        await supabase.from("bookings").update({ status }).eq("id", id);
-        setBookings((prev) =>
-            prev.map((b) => (b.id === id ? { ...b, status } : b))
-        );
-    };
-
-    const navigate = (address: string) => {
-        window.open(
-            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                address
-            )}`,
-            "_blank",
-            "noopener,noreferrer"
-        );
-    };
-
-    const today = new Date().toLocaleDateString("en-CA");
-
-    const todaysBookings = bookings.filter(
-        (b) =>
-            b.date >= today &&
-            [
-                "Assigned",
-                "Confirmed",
-                "En Route",
-                "In Progress",
-                "Completion Pending",
-            ].includes(b.status)
-    );
-    const todayJobs = bookings.filter((b) => b.date === today);
-    const upcomingJobs = bookings.filter((b) => b.date > today);
-
-    const inProgressCount = bookings.filter((b) =>
-        ["In Progress", "En Route", "Completion Pending"].includes(b.status)
-    ).length;
-
-    const completedCount = bookings.filter(
-        (b) => b.status === "Completed"
-    ).length;
-
-    const statusColor = (status: Booking["status"]) => {
-        switch (status) {
-            case "Completed":
-                return "bg-green-100 text-green-700";
-            case "Confirmed":
-                return "bg-blue-100 text-blue-700";
-            case "In Progress":
-                return "bg-yellow-100 text-yellow-700";
-            case "Cancelled":
-            case "Issue/Delayed":
-                return "bg-red-100 text-red-700";
-            default:
-                return "bg-gray-100 text-gray-700";
+        const ids = mapped.map((b: Booking) => b.id);
+        if (ids.length > 0) {
+          const { data: reviewRows } = await supabase
+            .from("reviews")
+            .select("booking_id, rating")
+            .in("booking_id", ids);
+          if (reviewRows) {
+            const map: Record<string, number> = {};
+            reviewRows.forEach((r: { booking_id: string; rating: number }) => { map[r.booking_id] = r.rating; });
+            setReviewsByBookingId(map);
+          }
         }
+      }
+      setLoading(false);
     };
 
-    const submitCompletion = async () => {
-        if (!selectedBooking || !proofImage) return;
+    load();
+  }, [userId, email]);
 
-        setUploading(true);
-
-        const filePath = `proofs/${selectedBooking.id}-${Date.now()}.jpg`;
-
-        await supabase.storage
-            .from("completion-proofs")
-            .upload(filePath, proofImage);
-
-        await supabase
-            .from("bookings")
-            .update({
-                status: "Completion Pending",
-                proof_of_completion_url: filePath,
-            })
-            .eq("id", selectedBooking.id);
-
-        setBookings((prev) =>
-            prev.map((b) =>
-                b.id === selectedBooking.id ? { ...b, status: "Completed" } : b
-            )
-        );
-
-        setUploading(false);
-        setSelectedBooking(null);
-        setProofImage(null);
-    };
-
-    if (loading) {
-        return (
-            <div className="h-screen flex items-center justify-center">
-                Loading dashboard...
-            </div>
-        );
+  const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    const response = await fetch("/api/provider/bookings", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ id, status: newStatus }),
+    });
+    if (response.ok) {
+      setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: newStatus } : b));
     }
+  };
 
+  const handleNavigate = (address: string) => {
+    const w = window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, "_blank", "noopener,noreferrer");
+    if (w) w.opener = null;
+  };
+
+  const todaysJobs = bookings.filter((b) =>
+    b.date === today && ["Assigned", "En Route", "Confirmed", "In Progress", "Completion Pending"].includes(b.status)
+  );
+  const activeJobs = bookings.filter((b) => !["Completed", "Cancelled"].includes(b.status));
+  const inProgressCount = bookings.filter((b) => ["In Progress", "En Route", "Completion Pending"].includes(b.status)).length;
+  const completedCount = bookings.filter((b) => b.status === "Completed").length;
+  const reviewCount = Object.keys(reviewsByBookingId).length;
+  const avgRating = reviewCount > 0
+    ? Object.values(reviewsByBookingId).reduce((s, r) => s + r, 0) / reviewCount
+    : null;
+
+  if (loading) {
     return (
-        <main className="min-h-screen p-6">
-            <Dialog
-                open={!!selectedBooking}
-                onOpenChange={() => setSelectedBooking(null)}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Job Actions</DialogTitle>
-                    </DialogHeader>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-                    {selectedBooking && (
-                        <div className="space-y-4">
-                            <p className="font-semibold">
-                                {selectedBooking.service}
-                            </p>
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <main className="p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <header className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Welcome, {fullName || "Provider"}!</h1>
+            <p className="text-gray-500 mt-1">Manage your service schedule and active jobs.</p>
+          </header>
 
-                            {selectedBooking.status === "Assigned" && (
-                                <button
-                                    onClick={() =>
-                                        updateStatus(
-                                            selectedBooking.id,
-                                            "En Route"
-                                        )
-                                    }
-                                    className="w-full bg-blue-600 text-white py-2 rounded-xl"
-                                >
-                                    Start Journey
-                                </button>
-                            )}
+              {/* Stats cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+                <Card className="bg-gradient-to-t from-primary/5 to-card shadow-xs">
+                  <CardHeader>
+                    <CardDescription>Today&apos;s Jobs</CardDescription>
+                    <CardTitle className="text-2xl font-semibold tabular-nums">{todaysJobs.length}</CardTitle>
+                    <CardAction><Calendar className="w-5 h-5 text-muted-foreground" /></CardAction>
+                  </CardHeader>
+                  <CardFooter className="text-sm text-muted-foreground">Scheduled for today</CardFooter>
+                </Card>
+                <Card className="bg-gradient-to-t from-primary/5 to-card shadow-xs">
+                  <CardHeader>
+                    <CardDescription>In Progress</CardDescription>
+                    <CardTitle className="text-2xl font-semibold tabular-nums">{inProgressCount}</CardTitle>
+                    <CardAction><Clock className="w-5 h-5 text-muted-foreground" /></CardAction>
+                  </CardHeader>
+                  <CardFooter className="text-sm text-muted-foreground">Currently active jobs</CardFooter>
+                </Card>
+                <Card className="bg-gradient-to-t from-primary/5 to-card shadow-xs">
+                  <CardHeader>
+                    <CardDescription>Completed</CardDescription>
+                    <CardTitle className="text-2xl font-semibold tabular-nums">{completedCount}</CardTitle>
+                    <CardAction><CheckCircle className="w-5 h-5 text-muted-foreground" /></CardAction>
+                  </CardHeader>
+                  <CardFooter className="text-sm text-muted-foreground">Total jobs finished</CardFooter>
+                </Card>
+                <Card className="bg-gradient-to-t from-primary/5 to-card shadow-xs">
+                  <CardHeader>
+                    <CardDescription>My Rating</CardDescription>
+                    <CardTitle className="text-2xl font-semibold tabular-nums">
+                      {avgRating !== null ? `${avgRating.toFixed(1)} / 5` : "N/A"}
+                    </CardTitle>
+                    <CardAction><Star className="w-5 h-5 text-muted-foreground" /></CardAction>
+                  </CardHeader>
+                  <CardFooter className="text-sm text-muted-foreground">
+                    {reviewCount > 0 ? `Based on ${reviewCount} review${reviewCount !== 1 ? "s" : ""}` : "No reviews yet"}
+                  </CardFooter>
+                </Card>
+              </div>
 
-                            {selectedBooking.status === "En Route" && (
-                                <button
-                                    onClick={() =>
-                                        updateStatus(
-                                            selectedBooking.id,
-                                            "In Progress"
-                                        )
-                                    }
-                                    className="w-full bg-yellow-600 text-white py-2 rounded-xl"
-                                >
-                                    Begin Detailing
-                                </button>
-                            )}
-
-                            {selectedBooking.status === "In Progress" && (
-                                <>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) =>
-                                            setProofImage(
-                                                e.target.files?.[0] || null
-                                            )
-                                        }
-                                    />
-
-                                    <button
-                                        onClick={submitCompletion}
-                                        disabled={uploading || !proofImage}
-                                        className="w-full bg-green-600 text-white py-2 rounded-xl disabled:opacity-50"
-                                    >
-                                        {uploading
-                                            ? "Submitting..."
-                                            : "Submit Verification"}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
-
-            <div className="max-w-7xl mx-auto">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold">
-                        Welcome, {providerName}!
-                    </h1>
-                    <p className="text-gray-500">
-                        Manage your service schedule and active jobs.
-                    </p>
-                </header>
-
-                {/* STATS */}
-                <div className="grid md:grid-cols-3 gap-6 mb-10">
-                    <Stat
-                        title="Today's Jobs"
-                        value={todaysBookings.length}
-                        icon={<Calendar />}
-                    />
-                    <Stat
-                        title="In Progress"
-                        value={inProgressCount}
-                        icon={<Clock />}
-                    />
-                    <Stat
-                        title="Completed"
-                        value={completedCount}
-                        icon={<CheckCircle />}
-                    />
+              {/* Job tabs */}
+              <section className="bg-white rounded-2xl border border-gray-100 p-6">
+                <div className="flex bg-gray-100 p-1 rounded-xl mb-6 gap-1">
+                  <button
+                    onClick={() => setDashboardTab("today")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${dashboardTab === "today" ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Today's Jobs
+                    <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center ${dashboardTab === "today" ? "bg-white/20 text-white" : "bg-yellow-400/20 text-yellow-700"}`}>
+                      {todaysJobs.length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setDashboardTab("all")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${dashboardTab === "all" ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    <Car className="w-4 h-4" />
+                    Active Jobs
+                    <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center ${dashboardTab === "all" ? "bg-white/20 text-white" : "bg-yellow-400/20 text-yellow-700"}`}>
+                      {activeJobs.length}
+                    </span>
+                  </button>
                 </div>
 
-                {/* TODAY */}
-                <section className="bg-white rounded-3xl shadow p-6 mb-10">
-                    <h2 className="text-xl font-bold mb-6">
-                        Today's Active Schedule
-                    </h2>
-
-                    {todaysBookings.length === 0 ? (
-                        <p className="text-center text-gray-400 py-10">
-                            No bookings today.
-                        </p>
-                    ) : (
-                        <div className="space-y-4">
-                            {todaysBookings.map((b) => (
-                                <div
-                                    key={b.id}
-                                    className="border rounded-2xl p-5"
-                                >
-                                    <div className="flex justify-between mb-3">
-                                        <h3 className="font-bold">
-                                            {b.service}
-                                        </h3>
-                                        <span
-                                            className={`px-3 py-1 rounded-full text-xs font-bold ${statusColor(
-                                                b.status
-                                            )}`}
-                                        >
-                                            {b.status}
-                                        </span>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-3 text-sm mb-4">
-                                        <div className="flex gap-2">
-                                            <Car className="w-4 h-4" />{" "}
-                                            {b.carDetails}
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Clock className="w-4 h-4" />{" "}
-                                            {b.timeSlot}
-                                        </div>
-                                        <div className="flex gap-2 md:col-span-2">
-                                            <MapPin className="w-4 h-4" />
-                                            <span className="flex-1 truncate">
-                                                {b.address}
-                                            </span>
-                                            <button
-                                                onClick={() =>
-                                                    navigate(b.address)
-                                                }
-                                                className="text-blue-600 flex items-center gap-1"
-                                            >
-                                                <Navigation className="w-4 h-4" />{" "}
-                                                Navigate
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-3">
-                                        {b.status === "Assigned" && (
-                                            <Button
-                                                onClick={() =>
-                                                    updateStatus(
-                                                        b.id,
-                                                        "En Route"
-                                                    )
-                                                }
-                                                className="flex-1 bg-blue-600"
-                                            >
-                                                Start Journey
-                                            </Button>
-                                        )}
-
-                                        {b.status === "En Route" && (
-                                            <Button
-                                                onClick={() =>
-                                                    updateStatus(
-                                                        b.id,
-                                                        "In Progress"
-                                                    )
-                                                }
-                                                className="flex-1 bg-yellow-600"
-                                            >
-                                                Begin Detailing
-                                            </Button>
-                                        )}
-
-                                        {b.status === "In Progress" && (
-                                            <Button
-                                                onClick={() =>
-                                                    updateStatus(
-                                                        b.id,
-                                                        "Completed"
-                                                    )
-                                                }
-                                                className="flex-1 bg-green-600"
-                                            >
-                                                Complete Job
-                                            </Button>
-                                        )}
-
-                                        <Button
-                                            variant="outline"
-                                            onClick={() =>
-                                                setSelectedBooking(b)
-                                            }
-                                        >
-                                            <Eye className="w-4 h-4 mr-1" />{" "}
-                                            Details
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
+                {dashboardTab === "today" && (
+                  todaysJobs.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-2">
+                      <Calendar className="w-7 h-7 text-gray-200" />
+                      <p className="text-sm text-gray-400">No bookings scheduled for today.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {todaysJobs.map((b) => (
+                        <div key={b.id} className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100/60 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-sm text-gray-900">{b.service}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${getStatusColor(b.status)}`}>{b.status}</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{b.timeSlot}</span>
+                              <span className="flex items-center gap-1"><Car className="w-3 h-3" />{b.carDetails}</span>
+                              <button onClick={() => handleNavigate(b.address)} className="flex items-center gap-1 text-gray-400 hover:text-gray-700 transition-colors">
+                                <Navigation className="w-3 h-3" />
+                                <span className="truncate max-w-[200px]">{b.address}</span>
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Link href={`/provider/jobs/${b.id}`} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition-all">
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          </div>
                         </div>
-                    )}
-                </section>
-            </div>
-        </main>
-    );
-}
+                      ))}
+                    </div>
+                  )
+                )}
 
-function Stat({
-    title,
-    value,
-    icon,
-}: {
-    title: string;
-    value: number;
-    icon: React.ReactNode;
-}) {
-    return (
-        <div className="bg-white p-6 rounded-2xl shadow flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-50 flex items-center justify-center rounded-xl">
-                {icon}
-            </div>
-            <div>
-                <p className="text-xs uppercase text-gray-400">{title}</p>
-                <p className="text-2xl font-bold">{value}</p>
-            </div>
+                {dashboardTab === "all" && (
+                  activeJobs.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-2">
+                      <Car className="w-7 h-7 text-gray-200" />
+                      <p className="text-sm text-gray-400">No active jobs assigned.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-50">
+                      {activeJobs.map((b) => (
+                        <div key={b.id} className="flex items-center gap-4 py-3 px-2 -mx-2 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="font-medium text-sm text-gray-900 truncate">{b.service}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${getStatusColor(b.status)}`}>{b.status}</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 text-xs text-gray-400">
+                              <span className="font-mono text-[10px]">{b.bookingId}</span>
+                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{b.date}</span>
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{b.timeSlot}</span>
+                            </div>
+                          </div>
+                          <Link href={`/provider/jobs/${b.id}`} className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-white hover:border-gray-300 transition-all shrink-0">
+                            View
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+              </section>
+
         </div>
-    );
+      </main>
+    </div>
+  );
 }

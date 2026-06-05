@@ -2,454 +2,459 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-    Car,
-    Wrench,
-    MapPin,
-    Calendar,
-    Clock,
-    DollarSign,
-    Edit,
-    Truck,
-    X,
-} from "lucide-react";
-import {
-    services,
-    carTypes,
-    timeSlots,
-    KVALLEY_AREAS,
-    KVALLEY_AREA_OPTIONS,
-    getTravelFee,
-} from "@/lib/bookingOptions";
+import { Car, Wrench, MapPin, Calendar, Clock, DollarSign, Edit, Truck, X, ChevronLeft } from "lucide-react";
+import { services, carTypes, timeSlots, KVALLEY_AREAS, KVALLEY_AREA_OPTIONS, getTravelFee } from "@/lib/bookingOptions";
 import supabase from "@/lib/supabase";
 
 interface BookingData {
-    carDetails: {
-        carBrand: string;
-        carModel: string;
-        carType: string;
-        plateNumber: string;
-        carColor: string;
-    };
-    service: {
-        id: string;
-        name: string;
-        description: string;
-        duration: string;
-        price: number;
-        features: string[];
-    } | null;
-    location: {
-        address: string;
-        date: string;
-        timeSlot: string;
-        travelFee: number;
-        selectedArea: string;
-    };
+  carDetails: {
+    carBrand: string;
+    carModel: string;
+    carType: string;
+    plateNumber: string;
+    carColor: string;
+  };
+  service: {
+    id: string;
+    name: string;
+    description: string;
+    duration: string;
+    price: number;
+    features: string[];
+  };
+  location: {
+    address: string;
+    date: string;
+    timeSlot: string;
+    travelFee: number;
+    selectedArea: string;
+  };
 }
 
-const parseDraftAddress = (address: string) => {
-    if (!address) return { selectedArea: "", detailedAddress: "" };
-    const matched = KVALLEY_AREA_OPTIONS.find((a) =>
-        address.endsWith(`, ${a.name}`)
-    );
-    if (matched) {
-        return {
-            selectedArea: matched.name,
-            detailedAddress: address.slice(0, -(matched.name.length + 2)),
-        };
-    }
-    return { selectedArea: "", detailedAddress: address };
+const parseSavedAddress = (address: string) => {
+  if (!address) return { selectedArea: "" };
+  const matched = KVALLEY_AREA_OPTIONS.find((area) => address.endsWith(`, ${area.name}`));
+  if (matched) return { selectedArea: matched.name };
+  const fallback = KVALLEY_AREA_OPTIONS.find((area) => address.includes(area.name));
+  return { selectedArea: fallback?.name || "" };
 };
 
 export default function BookingSummaryPage() {
-    const router = useRouter();
+  const router = useRouter();
+  const [draft, setDraft] = useState<BookingData | null>(null);
+  const [editing, setEditing] = useState({ car: false, service: false, location: false });
+  const [detailedAddress, setDetailedAddress] = useState("");
+  const [loading, setLoading] = useState(true);
 
-    const [draft, setDraft] = useState<BookingData | null>(null);
-    const [editing, setEditing] = useState({
-        car: false,
-        service: false,
-        location: false,
-    });
-    const [detailedAddress, setDetailedAddress] = useState("");
-    const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const loadDraft = async () => {
+      const carRaw = sessionStorage.getItem("booking:car-details");
+      const serviceRaw = sessionStorage.getItem("booking:service");
+      const locationRaw = sessionStorage.getItem("booking:location");
 
-    /* ================= LOAD DRAFT ================= */
-    useEffect(() => {
-        const carRaw = sessionStorage.getItem("booking:car-details");
-        const serviceRaw = sessionStorage.getItem("booking:service");
-        const locationRaw = sessionStorage.getItem("booking:location");
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) {
+        router.push("/login");
+        return;
+      }
 
-        if (!carRaw) {
-            router.push("/customer/book/car-details");
-            return;
-        }
+      const { data: savedDraft } = await supabase
+        .from("booking_drafts")
+        .select("*")
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
 
-        const carDetails = JSON.parse(carRaw);
+      const carDetails = carRaw
+        ? JSON.parse(carRaw)
+        : savedDraft
+          ? {
+              carBrand: savedDraft.car_brand || "",
+              carModel: savedDraft.car_model || "",
+              carType: savedDraft.car_type || "",
+              plateNumber: savedDraft.plate_number || "",
+              carColor: savedDraft.car_color || "",
+            }
+          : null;
 
-        const service = serviceRaw
-            ? {
-                  ...JSON.parse(serviceRaw),
-                  description:
-                      services.find((s) => s.id === JSON.parse(serviceRaw).id)
-                          ?.description ?? "",
-                  duration:
-                      services.find((s) => s.id === JSON.parse(serviceRaw).id)
-                          ?.duration ?? "",
-                  features:
-                      services.find((s) => s.id === JSON.parse(serviceRaw).id)
-                          ?.features ?? [],
-              }
-            : null;
+      if (!carDetails?.carBrand || !carDetails?.carModel || !carDetails?.carType || !carDetails?.plateNumber) {
+        router.push("/customer/book");
+        return;
+      }
 
-        const location = locationRaw
-            ? JSON.parse(locationRaw)
-            : {
-                  address: "",
-                  date: "",
-                  timeSlot: "",
-                  travelFee: 0,
-                  selectedArea: "",
-              };
+      const serviceParsed = serviceRaw ? JSON.parse(serviceRaw) : null;
+      const service =
+        serviceParsed
+          ? (services.find((s) => s.id === serviceParsed.id) ?? services[0])
+          : savedDraft?.service_id
+            ? (services.find((s) => s.id === savedDraft.service_id) ?? {
+                id: savedDraft.service_id,
+                name: savedDraft.service_name || "Selected Service",
+                description: savedDraft.service_description || "",
+                duration: savedDraft.service_duration || "",
+                price: Number(savedDraft.service_price || 0),
+                features: Array.isArray(savedDraft.service_features) ? savedDraft.service_features : [],
+              })
+            : services[0];
 
-        setDraft({
-            carDetails,
-            service,
-            location,
-        });
+      const parsedLocation = locationRaw ? JSON.parse(locationRaw) : null;
+      const parsedSavedAddress = parseSavedAddress(savedDraft?.service_address || "");
+      const location = parsedLocation
+        ? {
+            ...parsedLocation,
+            address:
+              parsedLocation.address ||
+              `${parsedLocation.detailedAddress || ""}, ${parsedLocation.selectedArea || ""}`.trim().replace(/^, /, ""),
+          }
+        : {
+            address: savedDraft?.service_address || "",
+            date: savedDraft?.scheduled_date || "",
+            timeSlot: savedDraft?.time_slot || "",
+            travelFee: Number(savedDraft?.travel_fee || 0),
+            selectedArea: parsedSavedAddress.selectedArea,
+          };
 
-        setDetailedAddress(location.address ?? "");
-        setLoading(false);
-    }, [router]);
+      setDraft({ carDetails, service, location });
+      setDetailedAddress(
+        location.selectedArea && location.address?.endsWith(`, ${location.selectedArea}`)
+          ? location.address.slice(0, -(location.selectedArea.length + 2))
+          : location.address || ""
+      );
+      sessionStorage.setItem("booking:car-details", JSON.stringify(carDetails));
+      sessionStorage.setItem("booking:service", JSON.stringify({ id: service.id, name: service.name, price: service.price }));
+      sessionStorage.setItem("booking:location", JSON.stringify(location));
+      setLoading(false);
+    };
 
-    if (loading || !draft) {
-        return (
-            <div className="flex h-screen items-center justify-center">
-                Loading...
-            </div>
-        );
+    loadDraft();
+  }, [router]);
+
+  if (loading || !draft) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const travelFee = draft.location.travelFee ?? 0;
+  const totalAmount = draft.service.price + travelFee;
+  const isEditing = editing.car || editing.service || editing.location;
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  };
+
+  const canSaveCar = Boolean(draft.carDetails.carBrand && draft.carDetails.carModel && draft.carDetails.carType && draft.carDetails.plateNumber);
+  const canSaveLocation = Boolean(draft.location.selectedArea && detailedAddress.trim() && draft.location.date && draft.location.timeSlot);
+
+  const saveCar = async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user) {
+      await supabase.from("booking_drafts").update({
+        car_brand: draft.carDetails.carBrand, car_model: draft.carDetails.carModel,
+        car_type: draft.carDetails.carType, plate_number: draft.carDetails.plateNumber,
+        car_color: draft.carDetails.carColor, updated_at: new Date().toISOString(),
+      }).eq("user_id", auth.user.id);
     }
+    sessionStorage.setItem("booking:car-details", JSON.stringify(draft.carDetails));
+    setEditing((p) => ({ ...p, car: false }));
+  };
 
-    const travelFee = draft.location.travelFee ?? 0;
-    const servicePrice = draft.service?.price ?? 0;
-    const totalAmount = servicePrice + travelFee;
+  const saveService = async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user) {
+      await supabase.from("booking_drafts").update({
+        service_id: draft.service.id, service_name: draft.service.name,
+        service_price: draft.service.price, updated_at: new Date().toISOString(),
+      }).eq("user_id", auth.user.id);
+    }
+    sessionStorage.setItem("booking:service", JSON.stringify({ id: draft.service.id, name: draft.service.name, price: draft.service.price }));
+    setEditing((p) => ({ ...p, service: false }));
+  };
 
-    const formatDate = (dateStr: string) =>
-        new Date(dateStr).toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
+  const saveLocation = async () => {
+    const combinedAddress = `${detailedAddress}, ${draft.location.selectedArea}`.trim().replace(/^, /, "");
+    const updated = { ...draft.location, address: combinedAddress };
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user) {
+      await supabase.from("booking_drafts").update({
+        service_address: combinedAddress, scheduled_date: draft.location.date,
+        time_slot: draft.location.timeSlot, travel_fee: draft.location.travelFee,
+        updated_at: new Date().toISOString(),
+      }).eq("user_id", auth.user.id);
+    }
+    sessionStorage.setItem("booking:location", JSON.stringify(updated));
+    setDraft((p) => p ? { ...p, location: updated } : p);
+    setEditing((p) => ({ ...p, location: false }));
+  };
 
-    const isEditing = editing.car || editing.service || editing.location;
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <button onClick={() => router.push("/customer/book/location")} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-medium transition-colors">
+          <ChevronLeft className="w-4 h-4" /><span>Back</span>
+        </button>
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">Booking Summary</h1>
+          <p className="text-gray-500">Step 5: Final review before secure payment</p>
+        </div>
 
-    /* ================= SAVE HANDLERS ================= */
-    const saveCar = async () => {
-        if (!draft) return;
-
-        await supabase
-            .from("booking_drafts")
-            .update({
-                car_brand: draft.carDetails.carBrand,
-                car_model: draft.carDetails.carModel,
-                car_type: draft.carDetails.carType,
-                plate_number: draft.carDetails.plateNumber,
-                car_color: draft.carDetails.carColor,
-                updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
-
-        setEditing((p) => ({ ...p, car: false }));
-    };
-
-    const saveService = async () => {
-        if (!draft?.service) return;
-
-        await supabase
-            .from("booking_drafts")
-            .update({
-                service_id: draft.service.id,
-                service_name: draft.service.name,
-                service_price: draft.service.price,
-                updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
-
-        setEditing((p) => ({ ...p, service: false }));
-    };
-
-    const saveLocation = async () => {
-        if (!draft) return;
-
-        const combined =
-            `${detailedAddress}, ${draft.location.selectedArea}`.trim();
-
-        await supabase
-            .from("booking_drafts")
-            .update({
-                service_address: combined,
-                scheduled_date: draft.location.date,
-                time_slot: draft.location.timeSlot,
-                travel_fee: draft.location.travelFee,
-                updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
-
-        setDraft((p) =>
-            p
-                ? {
-                      ...p,
-                      location: { ...p.location, address: combined },
-                  }
-                : p
-        );
-
-        setEditing((p) => ({ ...p, location: false }));
-    };
-
-    /* ================= UI ================= */
-    return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-            <div className="max-w-3xl mx-auto space-y-6">
-                <div className="bg-white rounded-3xl p-8 border">
-                    <h1 className="text-2xl font-bold">Booking Summary</h1>
-                    <p className="text-gray-500">
-                        Step 5: Final review before payment
-                    </p>
-                </div>
-
-                {/* VEHICLE */}
-                <Section
-                    title="Vehicle Information"
-                    icon={<Car className="w-6 h-6" />}
-                    onEdit={() => setEditing((p) => ({ ...p, car: true }))}
-                >
-                    <InfoGrid
-                        items={[
-                            ["Brand", draft.carDetails.carBrand],
-                            ["Model", draft.carDetails.carModel],
-                            ["Type", draft.carDetails.carType],
-                            ["Plate", draft.carDetails.plateNumber],
-                            ["Color", draft.carDetails.carColor || "-"],
-                        ]}
-                    />
-                </Section>
-
-                {/* SERVICE */}
-                <Section
-                    title="Selected Service"
-                    icon={<Wrench className="w-6 h-6" />}
-                    onEdit={() => setEditing((p) => ({ ...p, service: true }))}
-                >
-                    <div className="flex justify-between">
-                        <p className="font-bold">
-                            {draft.service?.name ?? "Service not selected"}
-                        </p>
-                        <p className="font-black text-blue-600">
-                            RM {draft.service?.price ?? 0}
-                        </p>
-                    </div>
-
-                    <p className="text-sm text-gray-500 mt-1">
-                        {draft.service?.description ??
-                            "Please select a service to continue"}
-                    </p>
-                </Section>
-
-                {/* LOCATION */}
-                <Section
-                    title="Location & Time"
-                    icon={<MapPin className="w-6 h-6" />}
-                    onEdit={() => setEditing((p) => ({ ...p, location: true }))}
-                >
-                    <p>{draft.location.address}</p>
-                    <div className="grid grid-cols-2 gap-4 mt-3">
-                        <p>
-                            <Calendar className="inline w-4 h-4 mr-1" />
-                            {formatDate(draft.location.date)}
-                        </p>
-                        <p>
-                            <Clock className="inline w-4 h-4 mr-1" />
-                            {draft.location.timeSlot}
-                        </p>
-                    </div>
-                    <p className="mt-2">
-                        <Truck className="inline w-4 h-4 mr-1" /> RM {travelFee}
-                    </p>
-                </Section>
-
-                {/* TOTAL */}
-                <div className="bg-white rounded-3xl p-6 border flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <DollarSign className="w-6 h-6" />
-                        <h3 className="font-bold">Total Amount</h3>
-                    </div>
-                    <div className="text-2xl font-black">RM {totalAmount}</div>
-                </div>
-
-                <button
-                    onClick={() => router.push("/customer/book/confirmation")}
-                    disabled={isEditing}
-                    className="w-full bg-green-600 text-white py-5 rounded-2xl font-black hover:bg-green-700 disabled:bg-gray-200"
-                >
-                    Confirm & Continue
-                </button>
+        {/* Vehicle Card */}
+        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3 text-gray-900">
+              <Car className="w-6 h-6" />
+              <h3 className="font-bold text-lg">Vehicle Information</h3>
             </div>
-
-            {/* MODALS */}
-            {editing.car && (
-                <Modal
-                    title="Edit Vehicle"
-                    onClose={() => setEditing((p) => ({ ...p, car: false }))}
-                >
-                    <input
-                        value={draft.carDetails.carBrand}
-                        onChange={(e) =>
-                            setDraft((p) =>
-                                p
-                                    ? {
-                                          ...p,
-                                          carDetails: {
-                                              ...p.carDetails,
-                                              carBrand: e.target.value,
-                                          },
-                                      }
-                                    : p
-                            )
-                        }
-                        className="input"
-                    />
-                    <button onClick={saveCar} className="btn-primary">
-                        Save
-                    </button>
-                </Modal>
-            )}
-
-            {editing.service && (
-                <Modal
-                    title="Edit Service"
-                    onClose={() =>
-                        setEditing((p) => ({ ...p, service: false }))
-                    }
-                >
-                    <select
-                        value={draft.service?.id ?? ""}
-                        onChange={(e) => {
-                            const next = services.find(
-                                (s) => s.id === e.target.value
-                            );
-
-                            if (!next) return;
-
-                            setDraft((p) => (p ? { ...p, service: next } : p));
-                        }}
-                        className="input"
-                    >
-                        <option value="" disabled>
-                            Select a service
-                        </option>
-
-                        {services.map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {s.name} - RM {s.price}
-                            </option>
-                        ))}
-                    </select>
-
-                    <button onClick={saveService} className="btn-primary">
-                        Save
-                    </button>
-                </Modal>
-            )}
-
-            {editing.location && (
-                <Modal
-                    title="Edit Location"
-                    onClose={() =>
-                        setEditing((p) => ({ ...p, location: false }))
-                    }
-                >
-                    <textarea
-                        value={detailedAddress}
-                        onChange={(e) => setDetailedAddress(e.target.value)}
-                        className="input"
-                    />
-                    <button onClick={saveLocation} className="btn-primary">
-                        Save
-                    </button>
-                </Modal>
-            )}
+            <button onClick={() => setEditing((p) => ({ ...p, car: true }))} className="flex items-center gap-1 text-sm font-bold text-gray-900 hover:underline">
+              <Edit className="w-4 h-4" /> Edit
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><p className="text-xs font-bold text-gray-400 uppercase">Brand</p><p className="font-medium">{draft.carDetails.carBrand}</p></div>
+            <div><p className="text-xs font-bold text-gray-400 uppercase">Model</p><p className="font-medium">{draft.carDetails.carModel}</p></div>
+            <div><p className="text-xs font-bold text-gray-400 uppercase">Type</p><p className="font-medium">{draft.carDetails.carType}</p></div>
+            <div><p className="text-xs font-bold text-gray-400 uppercase">Plate</p><p className="font-medium">{draft.carDetails.plateNumber}</p></div>
+            <div><p className="text-xs font-bold text-gray-400 uppercase">Color</p><p className="font-medium">{draft.carDetails.carColor || "-"}</p></div>
+          </div>
         </div>
-    );
-}
 
-/* ================= HELPERS ================= */
-
-function Section({
-    title,
-    icon,
-    onEdit,
-    children,
-}: {
-    title: string;
-    icon: React.ReactNode;
-    onEdit: () => void;
-    children: React.ReactNode;
-}) {
-    return (
-        <div className="bg-white rounded-3xl p-6 border">
-            <div className="flex justify-between mb-4">
-                <div className="flex items-center gap-3 text-blue-600">
-                    {icon}
-                    <h3 className="font-bold">{title}</h3>
-                </div>
-                <button
-                    onClick={onEdit}
-                    className="text-sm text-blue-600 font-bold"
-                >
-                    <Edit className="inline w-4 h-4 mr-1" />
-                    Edit
-                </button>
+        {/* Service Card */}
+        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3 text-green-600">
+              <Wrench className="w-6 h-6" />
+              <h3 className="font-bold text-lg">Selected Service</h3>
             </div>
-            {children}
-        </div>
-    );
-}
-
-function InfoGrid({ items }: { items: [string, string][] }) {
-    return (
-        <div className="grid grid-cols-2 gap-4">
-            {items.map(([k, v]) => (
-                <div key={k}>
-                    <p className="text-xs uppercase text-gray-400">{k}</p>
-                    <p className="font-medium">{v}</p>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function Modal({
-    title,
-    onClose,
-    children,
-}: {
-    title: string;
-    onClose: () => void;
-    children: React.ReactNode;
-}) {
-    return (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 max-w-xl w-full">
-                <div className="flex justify-between mb-4">
-                    <h2 className="font-bold text-lg">{title}</h2>
-                    <button onClick={onClose}>
-                        <X />
-                    </button>
-                </div>
-                {children}
+            <button onClick={() => setEditing((p) => ({ ...p, service: true }))} className="flex items-center gap-1 text-sm font-bold text-gray-900 hover:underline">
+              <Edit className="w-4 h-4" /> Edit
+            </button>
+          </div>
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="flex justify-between mb-2">
+              <p className="font-bold text-gray-800">{draft.service.name}</p>
+              <p className="font-black text-gray-900">RM {draft.service.price}</p>
             </div>
+            <p className="text-sm text-gray-500 leading-relaxed">{draft.service.description}</p>
+          </div>
         </div>
-    );
+
+        {/* Location Card */}
+        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3 text-red-500">
+              <MapPin className="w-6 h-6" />
+              <h3 className="font-bold text-lg">Location & Time</h3>
+            </div>
+            <button onClick={() => setEditing((p) => ({ ...p, location: true }))} className="flex items-center gap-1 text-sm font-bold text-gray-900 hover:underline">
+              <Edit className="w-4 h-4" /> Edit
+            </button>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase mb-1">Address</p>
+              <p className="text-gray-800">{draft.location.address}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase mb-1">Service Area</p>
+              <p className="text-gray-800">{draft.location.selectedArea || "-"}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Date</p>
+                <div className="flex items-center gap-2 font-medium text-gray-800">
+                  <Calendar className="w-4 h-4 text-gray-400" /> {formatDate(draft.location.date)}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Time</p>
+                <div className="flex items-center gap-2 font-medium text-gray-800">
+                  <Clock className="w-4 h-4 text-gray-400" /> {draft.location.timeSlot}
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase mb-1">Travel Fee</p>
+              <div className="flex items-center gap-2 font-medium text-gray-800">
+                <Truck className="w-4 h-4 text-gray-400" /> RM {travelFee}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Amount Card */}
+        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-gray-900">
+              <DollarSign className="w-6 h-6" />
+              <h3 className="font-bold text-lg">Total Amount</h3>
+            </div>
+            <div className="text-2xl font-black text-gray-900">RM {totalAmount}</div>
+          </div>
+          <p className="mt-2 text-sm text-gray-500">RM {draft.service.price} service + RM {travelFee} travel fee</p>
+        </div>
+
+        <button
+          onClick={() => router.push("/customer/book/payment")}
+          disabled={isEditing}
+          className="w-full bg-green-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 transition-all shadow-xl shadow-green-100"
+        >
+          Proceed to Payment
+        </button>
+      </div>
+
+      {/* Edit Car Modal */}
+      {editing.car && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Edit Vehicle Information</h2>
+              <button onClick={() => setEditing((p) => ({ ...p, car: false }))} className="text-gray-400 hover:text-gray-600">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Brand</p>
+                <input type="text" value={draft.carDetails.carBrand}
+                  onChange={(e) => setDraft((p) => p ? { ...p, carDetails: { ...p.carDetails, carBrand: e.target.value } } : p)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Model</p>
+                <input type="text" value={draft.carDetails.carModel}
+                  onChange={(e) => setDraft((p) => p ? { ...p, carDetails: { ...p.carDetails, carModel: e.target.value } } : p)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Type</p>
+                <select value={draft.carDetails.carType}
+                  onChange={(e) => setDraft((p) => p ? { ...p, carDetails: { ...p.carDetails, carType: e.target.value } } : p)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none">
+                  <option value="">Select car type</option>
+                  {carTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                </select>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Plate</p>
+                <input type="text" value={draft.carDetails.plateNumber}
+                  onChange={(e) => setDraft((p) => p ? { ...p, carDetails: { ...p.carDetails, plateNumber: e.target.value.toUpperCase() } } : p)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none uppercase font-mono" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Color</p>
+                <input type="text" value={draft.carDetails.carColor}
+                  onChange={(e) => setDraft((p) => p ? { ...p, carDetails: { ...p.carDetails, carColor: e.target.value } } : p)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none" />
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button onClick={() => setEditing((p) => ({ ...p, car: false }))} className="w-full sm:w-auto px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all">Cancel</button>
+              <button onClick={saveCar} disabled={!canSaveCar} className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Service Modal */}
+      {editing.service && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Edit Service</h2>
+              <button onClick={() => setEditing((p) => ({ ...p, service: false }))} className="text-gray-400 hover:text-gray-600">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <select
+                value={draft.service.id}
+                onChange={(e) => { const next = services.find((s) => s.id === e.target.value); if (next) setDraft((p) => p ? { ...p, service: next } : p); }}
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none"
+              >
+                {services.map((s) => <option key={s.id} value={s.id}>{s.name} - RM {s.price}</option>)}
+              </select>
+              <div className="flex justify-between">
+                <p className="font-bold text-gray-800">{draft.service.name}</p>
+                <p className="font-black text-gray-900">RM {draft.service.price}</p>
+              </div>
+              <p className="text-sm text-gray-500 leading-relaxed">{draft.service.description}</p>
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button onClick={() => setEditing((p) => ({ ...p, service: false }))} className="w-full sm:w-auto px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all">Cancel</button>
+              <button onClick={saveService} className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800 transition-all">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Location Modal */}
+      {editing.location && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Edit Location & Time</h2>
+              <button onClick={() => setEditing((p) => ({ ...p, location: false }))} className="text-gray-400 hover:text-gray-600">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Service Area</p>
+                <select
+                  value={draft.location.selectedArea}
+                  onChange={(e) => { const area = e.target.value; setDraft((p) => p ? { ...p, location: { ...p.location, selectedArea: area, travelFee: getTravelFee(area) } } : p); }}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none"
+                >
+                  <option value="">Select your city/district</option>
+                  {KVALLEY_AREAS.map((zone) => (
+                    <optgroup key={zone.zone} label={`${zone.zone} (${zone.distanceRange}) - RM ${zone.fee}`}>
+                      {zone.areas.map((area) => <option key={area} value={area}>{area}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Detailed Address</p>
+                <textarea
+                  value={detailedAddress}
+                  onChange={(e) => setDetailedAddress(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase mb-1">Date</p>
+                  <input type="date" value={draft.location.date}
+                    onChange={(e) => setDraft((p) => p ? { ...p, location: { ...p.location, date: e.target.value } } : p)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase mb-1">Time Slot</p>
+                  <select value={draft.location.timeSlot}
+                    onChange={(e) => setDraft((p) => p ? { ...p, location: { ...p.location, timeSlot: e.target.value } } : p)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none">
+                    <option value="">Select a time slot</option>
+                    {timeSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Travel Fee</p>
+                <div className="flex items-center gap-2 font-medium text-gray-800">
+                  <Truck className="w-4 h-4 text-gray-400" /> RM {draft.location.travelFee}
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button onClick={() => setEditing((p) => ({ ...p, location: false }))} className="w-full sm:w-auto px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all">Cancel</button>
+              <button onClick={saveLocation} disabled={!canSaveLocation} className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
