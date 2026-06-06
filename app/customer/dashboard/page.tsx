@@ -71,19 +71,19 @@ export default function CustomerDashboardPage() {
           </section>
 
           {/* QUICK STATS */}
-          <div className="grid grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
             {[
               { val: "30 min", label: "Quickest Service", icon: Clock },
               { val: "4", label: "Premium Packages", icon: Sparkles },
               { val: "5.0 ⭐", label: "Average Rating", icon: CheckCircle },
             ].map((s, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-3 md:p-5 shadow-xs flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-gray-100 shrink-0">
-                  <s.icon className="w-4 h-4 md:w-5 md:h-5 text-gray-700" />
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 md:p-5 shadow-xs flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 shrink-0">
+                  <s.icon className="w-5 h-5 text-gray-700" />
                 </div>
                 <div>
-                  <p className="text-sm md:text-xl font-black text-gray-900 leading-tight">{s.val}</p>
-                  <p className="text-xs text-gray-500 leading-tight">{s.label}</p>
+                  <p className="text-xl font-black text-gray-900">{s.val}</p>
+                  <p className="text-xs text-gray-500">{s.label}</p>
                 </div>
               </div>
             ))}

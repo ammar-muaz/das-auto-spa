@@ -109,8 +109,8 @@ export default function SettingsPage() {
     { value: "large", label: "Large" },
   ];
 
-  const rowClass = "flex items-start justify-between gap-8 py-4 border-b border-gray-100";
-  const labelClass = "text-sm text-gray-600 pt-0.5 shrink-0 w-40";
+  const rowClass = "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-8 py-4 border-b border-gray-100";
+  const labelClass = "text-sm text-gray-600 pt-0.5 shrink-0 sm:w-40";
 
   if (loading) {
     return (
@@ -122,17 +122,17 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      <main className="px-10 py-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-8">Settings</h1>
+      <main className="px-4 py-6 md:px-10 md:py-8">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-6 md:mb-8">Settings</h1>
 
-        <div className="relative">
-          {/* Vertical tabs on the left */}
-          <nav className="absolute left-0 top-0 w-44">
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+          {/* Tabs — horizontal scroll on mobile, vertical sidebar on desktop */}
+          <nav className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible md:w-44 md:shrink-0 pb-1 md:pb-0">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors mb-0.5 ${
+                className={`whitespace-nowrap md:w-full text-left px-3 py-2 text-sm rounded-lg transition-colors shrink-0 ${
                   activeTab === tab.key
                     ? "bg-white text-gray-900 font-medium shadow-sm"
                     : "text-gray-500 hover:text-gray-800 hover:bg-white/70"
@@ -143,8 +143,8 @@ export default function SettingsPage() {
             ))}
           </nav>
 
-          {/* Content — centered with max-w-xl matching Vite */}
-          <div className="flex justify-center">
+          {/* Content */}
+          <div className="flex-1 min-w-0">
             <div className="w-full max-w-xl">
 
               {/* PROFILE TAB */}
