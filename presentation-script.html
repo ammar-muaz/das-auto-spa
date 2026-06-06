@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Das Auto Spa — Presentation Script</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f4f4f5; color: #111; }
+
+  .cover {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #111 0%, #333 100%);
+    color: white; text-align: center; padding: 40px;
+    page-break-after: always;
+  }
+  .cover h1 { font-size: 48px; font-weight: 900; letter-spacing: -1px; margin-bottom: 12px; }
+  .cover p { font-size: 18px; opacity: 0.6; margin-bottom: 8px; }
+  .cover .badge { display: inline-block; margin-top: 24px; background: white; color: #111; font-weight: 700; font-size: 13px; padding: 8px 20px; border-radius: 999px; }
+
+  .toc { padding: 60px 80px; page-break-after: always; }
+  .toc h2 { font-size: 28px; font-weight: 800; margin-bottom: 24px; color: #111; }
+  .toc ol { padding-left: 24px; }
+  .toc li { font-size: 16px; margin-bottom: 10px; color: #333; }
+
+  .section { padding: 50px 80px; page-break-inside: avoid; margin-bottom: 32px; }
+  .section-header {
+    display: flex; align-items: center; gap: 16px;
+    background: #111; color: white;
+    padding: 20px 32px; border-radius: 16px; margin-bottom: 28px;
+  }
+  .section-number { font-size: 13px; font-weight: 700; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
+  .section-title { font-size: 22px; font-weight: 800; }
+  .section-time { margin-left: auto; background: white; color: #111; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; }
+
+  .step { background: white; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; border-left: 4px solid #e5e7eb; }
+  .step.action { border-left-color: #22c55e; }
+  .step.speak { border-left-color: #3b82f6; }
+  .step.note { border-left-color: #f59e0b; background: #fffbeb; }
+
+  .step-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .step.action .step-label { color: #16a34a; }
+  .step.speak .step-label { color: #2563eb; }
+  .step.note .step-label { color: #d97706; }
+
+  .step p { font-size: 14px; line-height: 1.7; color: #374151; }
+  .step strong { color: #111; }
+
+  .tip { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-top: 20px; font-size: 13px; color: #166534; }
+
+  @media print {
+    body { background: white; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Cover -->
+<div class="cover">
+  <p style="font-size:13px;opacity:0.4;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;">Final Year Project Presentation</p>
+  <h1>Das Auto Spa</h1>
+  <p>Door-to-Door Car Wash Booking System</p>
+  <p style="margin-top:8px;opacity:0.4;font-size:14px;">Next.js · Supabase · Nodemailer</p>
+  <div class="badge">⏱ 5–10 Minute Presentation Script</div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Presentation Flow</h2>
+  <ol>
+    <li>Opening & System Overview <span style="color:#999">(~1 min)</span></li>
+    <li>Registration & Login <span style="color:#999">(~1 min)</span></li>
+    <li>Customer — Booking Flow <span style="color:#999">(~2 min)</span></li>
+    <li>Customer — Dashboard & History <span style="color:#999">(~1 min)</span></li>
+    <li>Admin Portal <span style="color:#999">(~2 min)</span></li>
+    <li>Service Provider Portal <span style="color:#999">(~1 min)</span></li>
+    <li>Closing <span style="color:#999">(~30 sec)</span></li>
+  </ol>
+  <div class="tip">💡 Open the app at localhost:3000 before presenting. Have two browser tabs ready — one logged in as customer, one as admin.</div>
+</div>
+
+<!-- Section 1 -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-number">Section 01</div>
+      <div class="section-title">Opening & System Overview</div>
+    </div>
+    <div class="section-time">~1 min</div>
+  </div>
+
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"This is <strong>Das Auto Spa</strong> — a door-to-door car wash booking system. Instead of going to a car wash, the service comes to you. Customers can book online, pay online, and track their service in real time."</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"The system has three types of users — <strong>customers</strong> who book, <strong>service providers</strong> who carry out the jobs, and <strong>admins</strong> who manage everything. I'll walk you through each one."</p>
+  </div>
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Show the <strong>home page</strong> at localhost:3000. Scroll slowly so they can see the landing page design.</p>
+  </div>
+</div>
+
+<!-- Section 2 -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-number">Section 02</div>
+      <div class="section-title">Registration & Login</div>
+    </div>
+    <div class="section-time">~1 min</div>
+  </div>
+
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Click <strong>Get Started</strong> or navigate to <strong>/register</strong>.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"New users register with their name, email, phone, and a password. The moment they register, a <strong>welcome email</strong> is automatically sent to their inbox — no manual steps needed."</p>
+  </div>
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Go to <strong>/login</strong>. Log in as a customer using a test account.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"The system automatically detects the user's role and redirects them to the correct dashboard — customer, admin, or provider."</p>
+  </div>
+</div>
+
+<!-- Section 3 -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-number">Section 03</div>
+      <div class="section-title">Customer — Booking Flow</div>
+    </div>
+    <div class="section-time">~2 min</div>
+  </div>
+
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>From the customer dashboard, click <strong>Book a Service</strong>.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Booking is a step-by-step flow. First, the customer uploads a photo of their car — our <strong>AI analyses the dirt level</strong> and recommends a service package automatically."</p>
+  </div>
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Upload a car photo and show the AI dirt level result.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Then they choose a service, enter their location and pick a date and time slot. Only <strong>available slots</strong> are shown — already-booked slots are greyed out automatically."</p>
+  </div>
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Complete the service and location steps. Show the time slot picker with greyed-out slots.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"For payment, the customer can choose <strong>cash on service</strong>, or <strong>online banking</strong> where they scan a DuitNow QR code and upload their receipt. The admin then verifies the receipt."</p>
+  </div>
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Select <strong>Cash</strong> and complete the booking. Show the confirmation page.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Once booked, both the customer and admin receive an <strong>instant email notification</strong> and an in-app notification."</p>
+  </div>
+</div>
+
+<!-- Section 4 -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-number">Section 04</div>
+      <div class="section-title">Customer — Dashboard & History</div>
+    </div>
+    <div class="section-time">~1 min</div>
+  </div>
+
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Go to <strong>Booking History</strong>.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Customers can view all their bookings here. They can <strong>reschedule</strong> upcoming bookings — the system notifies both the customer and admin by email and in-app notification. They can also <strong>cancel</strong> — if they already paid, the system automatically flags it as Refund Required for the admin."</p>
+  </div>
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Show the bell icon — click it to show in-app notifications.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Every important action triggers a notification here — bookings, reschedules, cancellations, and refunds."</p>
+  </div>
+</div>
+
+<!-- Section 5 -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-number">Section 05</div>
+      <div class="section-title">Admin Portal</div>
+    </div>
+    <div class="section-time">~2 min</div>
+  </div>
+
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Switch to the admin browser tab. Go to <strong>/admin/dashboard</strong>.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"The admin dashboard shows a real-time overview — total bookings, revenue, active providers, and today's schedule at a glance."</p>
+  </div>
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Go to <strong>Bookings</strong>. Find the booking just made by the customer.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Admin can assign a service provider to any booking. Once assigned, both the customer and the provider receive an <strong>automatic email notification</strong>."</p>
+  </div>
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Assign a provider. Then go to <strong>Manage Users</strong>.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Admin can manage all users — activate or deactivate accounts, create new service provider accounts, or delete users. All changes are instant."</p>
+  </div>
+  <div class="step note">
+    <div class="step-label">Optional — show if time allows</div>
+    <p>Show the <strong>payment receipt verification</strong> — admin views the uploaded receipt and clicks Verify Payment. Customer gets notified instantly.</p>
+  </div>
+</div>
+
+<!-- Section 6 -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-number">Section 06</div>
+      <div class="section-title">Service Provider Portal</div>
+    </div>
+    <div class="section-time">~1 min</div>
+  </div>
+
+  <div class="step action">
+    <div class="step-label">Action</div>
+    <p>Log in as a service provider or show the provider dashboard.</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Service providers see only their assigned jobs. They update the status as they work — <strong>En Route, In Progress</strong>, and when done they upload a <strong>proof of completion photo</strong>. The customer is notified at every step."</p>
+  </div>
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Providers can also apply for <strong>leave</strong> directly in the system. Admin approves or rejects it, and the provider is notified by email."</p>
+  </div>
+</div>
+
+<!-- Section 7 -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-number">Section 07</div>
+      <div class="section-title">Closing</div>
+    </div>
+    <div class="section-time">~30 sec</div>
+  </div>
+
+  <div class="step speak">
+    <div class="step-label">Say this</div>
+    <p>"Das Auto Spa is a fully functional, end-to-end booking system. It handles the complete lifecycle — from registration to booking, payment verification, service delivery, and customer reviews — with real-time notifications at every step for all three user roles. Thank you."</p>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Das Auto Spa — User Manual</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f4f4f5; color: #111; font-size: 14px; }
+
+  .cover {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #111 0%, #333 100%);
+    color: white; text-align: center; padding: 40px;
+    page-break-after: always;
+  }
+  .cover h1 { font-size: 48px; font-weight: 900; letter-spacing: -1px; margin-bottom: 12px; }
+  .cover p { font-size: 18px; opacity: 0.6; }
+  .cover .sub { font-size: 13px; opacity: 0.35; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
+  .cover .roles { display: flex; gap: 12px; margin-top: 32px; justify-content: center; flex-wrap: wrap; }
+  .cover .role { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 20px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+
+  .toc { padding: 60px 80px; page-break-after: always; }
+  .toc h2 { font-size: 26px; font-weight: 800; margin-bottom: 24px; }
+  .toc-section { margin-bottom: 20px; }
+  .toc-section h3 { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 8px; display: flex; align-items: center; gap-8px; }
+  .toc-section ul { padding-left: 20px; }
+  .toc-section li { font-size: 13px; color: #555; margin-bottom: 4px; list-style: disc; }
+  .role-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
+  .tag-customer { background: #dcfce7; color: #166534; }
+  .tag-admin { background: #ede9fe; color: #6d28d9; }
+  .tag-provider { background: #dbeafe; color: #1d4ed8; }
+
+  .chapter { padding: 50px 80px; page-break-before: always; }
+  .chapter-header { display: flex; align-items: center; gap: 16px; padding: 24px 32px; border-radius: 16px; margin-bottom: 32px; }
+  .chapter-header.customer { background: #f0fdf4; border: 2px solid #bbf7d0; }
+  .chapter-header.admin { background: #f5f3ff; border: 2px solid #ddd6fe; }
+  .chapter-header.provider { background: #eff6ff; border: 2px solid #bfdbfe; }
+  .chapter-header.general { background: #f9fafb; border: 2px solid #e5e7eb; }
+  .chapter-icon { font-size: 32px; }
+  .chapter-title { font-size: 22px; font-weight: 800; }
+  .chapter-sub { font-size: 13px; color: #666; margin-top: 2px; }
+
+  .guide { background: white; border-radius: 14px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .guide h3 { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #f3f4f6; }
+  .guide ol, .guide ul { padding-left: 20px; }
+  .guide li { margin-bottom: 10px; line-height: 1.6; color: #374151; }
+  .guide li strong { color: #111; }
+
+  .tip { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 18px; margin-top: 16px; font-size: 13px; color: #92400e; line-height: 1.6; }
+  .warning { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 14px 18px; margin-top: 16px; font-size: 13px; color: #991b1b; line-height: 1.6; }
+  .info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; margin-top: 16px; font-size: 13px; color: #1e40af; line-height: 1.6; }
+
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .status-item { padding: 10px 14px; border-radius: 10px; }
+  .status-item .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .status-item .desc { font-size: 12px; }
+
+  @media print {
+    body { background: white; }
+    .chapter { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Cover -->
+<div class="cover">
+  <p class="sub">User Manual</p>
+  <h1>Das Auto Spa</h1>
+  <p>Door-to-Door Car Wash Booking System</p>
+  <div class="roles">
+    <div class="role">👤 Customer</div>
+    <div class="role">🛡 Admin</div>
+    <div class="role">🔧 Service Provider</div>
+  </div>
+</div>
+
+<!-- Table of Contents -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+
+  <div class="toc-section">
+    <h3>1. Getting Started <span class="role-tag tag-customer">All Users</span></h3>
+    <ul>
+      <li>How to Register</li>
+      <li>How to Login</li>
+      <li>Forgot Password</li>
+    </ul>
+  </div>
+
+  <div class="toc-section">
+    <h3>2. Customer Guide <span class="role-tag tag-customer">Customer</span></h3>
+    <ul>
+      <li>Booking a Service (Step-by-Step)</li>
+      <li>Payment Methods</li>
+      <li>Viewing Booking History</li>
+      <li>Rescheduling a Booking</li>
+      <li>Cancelling a Booking</li>
+      <li>Submitting a Review</li>
+      <li>In-App Notifications</li>
+    </ul>
+  </div>
+
+  <div class="toc-section">
+    <h3>3. Admin Guide <span class="role-tag tag-admin">Admin</span></h3>
+    <ul>
+      <li>Dashboard Overview</li>
+      <li>Managing Bookings</li>
+      <li>Assigning Service Providers</li>
+      <li>Verifying Payments</li>
+      <li>Processing Refunds</li>
+      <li>Managing Users</li>
+      <li>Managing Packages & Services</li>
+      <li>Reviewing Customer Feedback</li>
+      <li>Managing Leave Requests</li>
+    </ul>
+  </div>
+
+  <div class="toc-section">
+    <h3>4. Service Provider Guide <span class="role-tag tag-provider">Provider</span></h3>
+    <ul>
+      <li>Dashboard Overview</li>
+      <li>Managing Assigned Jobs</li>
+      <li>Updating Job Status</li>
+      <li>Uploading Proof of Completion</li>
+      <li>Applying for Leave</li>
+    </ul>
+  </div>
+
+  <div class="toc-section">
+    <h3>5. Notifications & Emails</h3>
+    <ul>
+      <li>What Triggers a Notification</li>
+      <li>Email Notifications List</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Chapter 1: Getting Started -->
+<div class="chapter">
+  <div class="chapter-header general">
+    <div class="chapter-icon">🚀</div>
+    <div>
+      <div class="chapter-title">Chapter 1: Getting Started</div>
+      <div class="chapter-sub">For all users — registration, login, and password reset</div>
+    </div>
+  </div>
+
+  <div class="guide">
+    <h3>1.1 How to Register (New Customers Only)</h3>
+    <ol>
+      <li>Go to the Das Auto Spa website and click <strong>Get Started</strong> or <strong>Register</strong>.</li>
+      <li>Fill in your <strong>Full Name</strong>, <strong>Email Address</strong>, and <strong>Phone Number</strong>.</li>
+      <li>Create a password (minimum 6 characters) and confirm it.</li>
+      <li>Click <strong>Create Account</strong>.</li>
+      <li>You will be redirected to a success page. A <strong>welcome email</strong> will be sent to your inbox.</li>
+      <li>Click <strong>Back to Login</strong> and log in with your email and password.</li>
+    </ol>
+    <div class="info">ℹ️ Service Providers and Admins do not register themselves — their accounts are created by the admin.</div>
+  </div>
+
+  <div class="guide">
+    <h3>1.2 How to Login</h3>
+    <ol>
+      <li>Go to the login page.</li>
+      <li>Enter your registered <strong>Email</strong> and <strong>Password</strong>.</li>
+      <li>Click <strong>Login</strong>.</li>
+      <li>The system will automatically redirect you to your correct dashboard based on your role.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>1.3 Forgot Password</h3>
+    <ol>
+      <li>On the login page, click <strong>Forgot password?</strong></li>
+      <li>Enter your registered email address and click <strong>Send Reset Link</strong>.</li>
+      <li>Check your inbox for an email from Das Auto Spa with a <strong>Reset Password</strong> link.</li>
+      <li>Click the link — you will be taken to a page to set your new password.</li>
+      <li>Enter your new password, confirm it, and click <strong>Reset Password</strong>.</li>
+      <li>A success message will appear and you will be redirected back to the login page automatically.</li>
+    </ol>
+    <div class="tip">💡 Check your Spam/Junk folder if the email does not arrive within a few minutes.</div>
+  </div>
+</div>
+
+<!-- Chapter 2: Customer -->
+<div class="chapter">
+  <div class="chapter-header customer">
+    <div class="chapter-icon">👤</div>
+    <div>
+      <div class="chapter-title">Chapter 2: Customer Guide</div>
+      <div class="chapter-sub">Booking, managing, and reviewing your car wash service</div>
+    </div>
+  </div>
+
+  <div class="guide">
+    <h3>2.1 Booking a Service (Step-by-Step)</h3>
+    <ol>
+      <li>From your dashboard, click <strong>Book a Service</strong>.</li>
+      <li><strong>Step 1 — Car Image:</strong> Upload a photo of your car. The AI will analyse the dirt level and suggest a suitable package. You may skip this step if preferred.</li>
+      <li><strong>Step 2 — Select Service:</strong> Choose a wash package (e.g. Basic Wash, Premium Wash, Full Detail). The price and duration are shown for each.</li>
+      <li><strong>Step 3 — Location & Schedule:</strong> Enter your address, select your area, choose a date (minimum tomorrow), and pick an available time slot. Greyed-out slots are already booked.</li>
+      <li><strong>Step 4 — Summary:</strong> Review your booking details including service, date, time, location, and total amount.</li>
+      <li><strong>Step 5 — Payment:</strong> Choose your payment method and complete payment.</li>
+      <li>Upon successful booking, you will see a <strong>Confirmation Page</strong> with your Booking ID. An email confirmation will be sent to you.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>2.2 Payment Methods</h3>
+    <ul>
+      <li><strong>Cash on Service:</strong> Pay the provider directly when the service is completed. Payment status will show as <em>Pending</em> until confirmed by admin.</li>
+      <li><strong>Online Banking (DuitNow):</strong> Scan the QR code shown on screen and transfer the exact amount. Then upload your payment receipt (image or PDF). Admin will verify your receipt and confirm your booking.</li>
+    </ul>
+    <div class="warning">⚠️ Make sure to upload a clear payment receipt when using Online Banking. Your booking will not be confirmed until the receipt is verified.</div>
+  </div>
+
+  <div class="guide">
+    <h3>2.3 Viewing Booking History</h3>
+    <ol>
+      <li>From your dashboard sidebar, click <strong>Booking History</strong>.</li>
+      <li>All your bookings are listed with status, date, service, and payment info.</li>
+      <li>Use the <strong>date filter</strong> to search for bookings on a specific date.</li>
+    </ol>
+    <div style="margin-top:16px;">
+      <p style="font-weight:700;margin-bottom:10px;">Booking Statuses:</p>
+      <div class="status-grid">
+        <div class="status-item" style="background:#f9fafb;border:1px solid #e5e7eb;">
+          <div class="label">Confirmed</div>
+          <div class="desc">Booking received, provider not yet assigned</div>
+        </div>
+        <div class="status-item" style="background:#f9fafb;border:1px solid #e5e7eb;">
+          <div class="label">Assigned</div>
+          <div class="desc">A provider has been assigned to your booking</div>
+        </div>
+        <div class="status-item" style="background:#f5f3ff;border:1px solid #ddd6fe;">
+          <div class="label">En Route</div>
+          <div class="desc">Provider is on the way to your location</div>
+        </div>
+        <div class="status-item" style="background:#fefce8;border:1px solid #fde68a;">
+          <div class="label">In Progress</div>
+          <div class="desc">Car wash is currently being performed</div>
+        </div>
+        <div class="status-item" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+          <div class="label">Completed</div>
+          <div class="desc">Service confirmed complete by admin</div>
+        </div>
+        <div class="status-item" style="background:#fef2f2;border:1px solid #fecaca;">
+          <div class="label">Cancelled</div>
+          <div class="desc">Booking has been cancelled</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide">
+    <h3>2.4 Rescheduling a Booking</h3>
+    <ol>
+      <li>In Booking History, find the booking you want to reschedule.</li>
+      <li>Click the <strong>Reschedule</strong> button (only available for Confirmed, Pending, or Assigned bookings).</li>
+      <li>Select a new date and time slot. Already-booked and past slots are greyed out.</li>
+      <li>Click <strong>Confirm</strong>. A success popup will show the old and new date.</li>
+      <li>You will receive an in-app notification and email confirming the reschedule. Admin is also notified.</li>
+    </ol>
+    <div class="tip">💡 You can only reschedule to a date that is at least tomorrow.</div>
+  </div>
+
+  <div class="guide">
+    <h3>2.5 Cancelling a Booking</h3>
+    <ol>
+      <li>In Booking History, find the booking and click <strong>Cancel</strong>.</li>
+      <li>A confirmation popup will appear. Click <strong>Yes, Cancel</strong> to proceed.</li>
+      <li>A success popup confirms the cancellation. If you had paid online, it will show a <em>Refund in Progress</em> notice.</li>
+      <li>Admin will be notified to process your refund if applicable.</li>
+    </ol>
+    <div class="warning">⚠️ Cancellation cannot be undone. Once cancelled, the time slot becomes available for other customers.</div>
+  </div>
+
+  <div class="guide">
+    <h3>2.6 Submitting a Review</h3>
+    <ol>
+      <li>After your booking is marked <strong>Completed</strong>, a <strong>Rate this wash</strong> button will appear.</li>
+      <li>Click it, choose a star rating (1–5), and optionally write a comment.</li>
+      <li>Click <strong>Submit Review</strong>.</li>
+      <li>If the admin replies to your review, it will appear below your review in the booking history.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>2.7 In-App Notifications</h3>
+    <ol>
+      <li>Click the <strong>bell icon 🔔</strong> in the top navigation bar to view your notifications.</li>
+      <li>Unread notifications are highlighted. Click any notification to mark it as read.</li>
+      <li>Notifications are sent for: booking confirmation, provider assigned, status updates, reschedule, cancellation, refund processed, and payment verification.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Chapter 3: Admin -->
+<div class="chapter">
+  <div class="chapter-header admin">
+    <div class="chapter-icon">🛡</div>
+    <div>
+      <div class="chapter-title">Chapter 3: Admin Guide</div>
+      <div class="chapter-sub">Managing bookings, users, payments, and operations</div>
+    </div>
+  </div>
+
+  <div class="guide">
+    <h3>3.1 Dashboard Overview</h3>
+    <p style="margin-bottom:12px;">The admin dashboard shows a real-time summary of the system:</p>
+    <ul>
+      <li><strong>Total Bookings, Revenue, Active Providers</strong> — key metrics at a glance</li>
+      <li><strong>Today's Schedule</strong> — all bookings scheduled for today with their status</li>
+      <li><strong>Recent Bookings</strong> — the latest bookings across all customers</li>
+      <li><strong>In-App Notifications</strong> — alerts for new bookings, reschedules, cancellations, and reviews</li>
+    </ul>
+  </div>
+
+  <div class="guide">
+    <h3>3.2 Managing Bookings</h3>
+    <ol>
+      <li>Go to <strong>Bookings</strong> in the sidebar.</li>
+      <li>View all bookings. Use filters (date, status, search) to find specific bookings.</li>
+      <li>Update a booking's status using the dropdown — statuses flow from Confirmed → Assigned → En Route → In Progress → Completion Pending → Completed.</li>
+      <li>To cancel a booking from the admin side, set status to <strong>Cancelled</strong>. If the customer has paid, the payment status will automatically change to <em>Refund Required</em>.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>3.3 Assigning Service Providers</h3>
+    <ol>
+      <li>Find the booking and click the <strong>Assign Provider</strong> dropdown.</li>
+      <li>Select an available provider from the list.</li>
+      <li>Click <strong>Assign</strong>. The booking status changes to <em>Assigned</em>.</li>
+      <li>Both the customer and the provider receive an automatic email and in-app notification.</li>
+    </ol>
+    <div class="tip">💡 Only providers without approved leave on that date will appear in the dropdown.</div>
+  </div>
+
+  <div class="guide">
+    <h3>3.4 Verifying Payments (Online Banking)</h3>
+    <ol>
+      <li>Bookings with <em>Pending Verification</em> payment status have a receipt uploaded by the customer.</li>
+      <li>Click <strong>View Receipt</strong> to open the uploaded payment proof.</li>
+      <li>If valid, click <strong>Verify Payment</strong>. The payment status changes to <em>Paid</em>.</li>
+      <li>The customer receives an automatic email and in-app notification confirming their payment.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>3.5 Processing Refunds</h3>
+    <ol>
+      <li>Cancelled bookings with a previous payment will show <em>Refund Required</em> status in purple.</li>
+      <li>Process the refund to the customer manually via your bank.</li>
+      <li>Once done, click <strong>Mark Refund Processed</strong> in the booking.</li>
+      <li>The system automatically notifies the customer by email and in-app notification that their refund has been processed.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>3.6 Managing Users</h3>
+    <ol>
+      <li>Go to <strong>Manage Users</strong> in the sidebar.</li>
+      <li><strong>Create Service Provider:</strong> Click <em>Create Service Provider</em>, fill in their name, email, and phone. Their account is created with a temporary password (<em>Welcome123</em>) — share these credentials with the provider.</li>
+      <li><strong>Activate/Deactivate:</strong> Click the toggle icon next to a user to activate or deactivate their account. Deactivated users cannot log in.</li>
+      <li><strong>Delete User:</strong> Click the trash icon and confirm. This permanently removes the user from the system.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>3.7 Managing Packages & Services</h3>
+    <ol>
+      <li>Go to <strong>Packages</strong> in the sidebar.</li>
+      <li>View all available service packages with pricing and features.</li>
+      <li>Add new packages, edit existing ones, or deactivate packages that are no longer offered.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>3.8 Reviewing Customer Feedback</h3>
+    <ol>
+      <li>Go to <strong>Reviews</strong> in the sidebar.</li>
+      <li>View all customer reviews with star ratings and comments.</li>
+      <li>Click <strong>Reply</strong> on any review to write an admin response. The customer will see your reply in their booking history.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>3.9 Managing Leave Requests</h3>
+    <ol>
+      <li>Go to <strong>Leave</strong> in the sidebar.</li>
+      <li>View all pending leave requests from service providers.</li>
+      <li>Click <strong>Approve</strong> or <strong>Reject</strong>. The provider is notified by email of the decision.</li>
+      <li>Approved leave dates are automatically blocked when assigning providers to bookings.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Chapter 4: Provider -->
+<div class="chapter">
+  <div class="chapter-header provider">
+    <div class="chapter-icon">🔧</div>
+    <div>
+      <div class="chapter-title">Chapter 4: Service Provider Guide</div>
+      <div class="chapter-sub">Managing your assigned jobs and leave</div>
+    </div>
+  </div>
+
+  <div class="guide">
+    <h3>4.1 Dashboard Overview</h3>
+    <ul>
+      <li>Your dashboard shows your <strong>assigned jobs</strong> for today and upcoming dates.</li>
+      <li>Key stats: total jobs completed, jobs today, and pending jobs.</li>
+      <li>Notifications alert you when a new job is assigned.</li>
+    </ul>
+  </div>
+
+  <div class="guide">
+    <h3>4.2 Managing Assigned Jobs</h3>
+    <ol>
+      <li>Go to <strong>My Jobs</strong> in the sidebar.</li>
+      <li>View all your assigned bookings with customer details, location, and scheduled time.</li>
+      <li>Use filters to view jobs by date or status.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>4.3 Updating Job Status</h3>
+    <ol>
+      <li>Find your assigned job and click the status update button.</li>
+      <li>Update the status as you progress through the job:</li>
+    </ol>
+    <div class="status-grid" style="margin-top:12px;">
+      <div class="status-item" style="background:#f5f3ff;border:1px solid #ddd6fe;">
+        <div class="label" style="color:#6d28d9;">En Route</div>
+        <div class="desc">Set this when you leave for the customer's location</div>
+      </div>
+      <div class="status-item" style="background:#fefce8;border:1px solid #fde68a;">
+        <div class="label" style="color:#854d0e;">In Progress</div>
+        <div class="desc">Set this when you start washing the car</div>
+      </div>
+      <div class="status-item" style="background:#f0fdfa;border:1px solid #99f6e4;">
+        <div class="label" style="color:#0f766e;">Completion Pending</div>
+        <div class="desc">Set this when job is done, awaiting admin confirmation</div>
+      </div>
+      <div class="status-item" style="background:#fef2f2;border:1px solid #fecaca;">
+        <div class="label" style="color:#991b1b;">Issue / Delayed</div>
+        <div class="desc">Set if there is a problem — admin will be notified</div>
+      </div>
+    </div>
+    <div class="info" style="margin-top:16px;">ℹ️ The customer receives an automatic notification every time you update the status.</div>
+  </div>
+
+  <div class="guide">
+    <h3>4.4 Uploading Proof of Completion</h3>
+    <ol>
+      <li>When the job is done, set the status to <strong>Completion Pending</strong>.</li>
+      <li>Upload a <strong>photo of the completed car wash</strong> as proof.</li>
+      <li>Admin will review the proof and mark the job as <em>Completed</em>.</li>
+    </ol>
+  </div>
+
+  <div class="guide">
+    <h3>4.5 Applying for Leave</h3>
+    <ol>
+      <li>Go to <strong>Leave</strong> in the sidebar.</li>
+      <li>Click <strong>Apply for Leave</strong>.</li>
+      <li>Select the date, choose a reason, and optionally add notes.</li>
+      <li>Click <strong>Submit</strong>. Admin will be notified of your request.</li>
+      <li>You will receive an email when admin approves or rejects your leave.</li>
+    </ol>
+    <div class="warning">⚠️ You cannot apply for leave on dates that already have confirmed jobs assigned to you.</div>
+  </div>
+</div>
+
+<!-- Chapter 5: Notifications -->
+<div class="chapter">
+  <div class="chapter-header general">
+    <div class="chapter-icon">🔔</div>
+    <div>
+      <div class="chapter-title">Chapter 5: Notifications & Emails</div>
+      <div class="chapter-sub">What triggers notifications and who receives them</div>
+    </div>
+  </div>
+
+  <div class="guide">
+    <h3>5.1 Email Notifications Summary</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:#f9fafb;text-align:left;">
+          <th style="padding:10px 14px;border-bottom:2px solid #e5e7eb;">Event</th>
+          <th style="padding:10px 14px;border-bottom:2px solid #e5e7eb;">Customer</th>
+          <th style="padding:10px 14px;border-bottom:2px solid #e5e7eb;">Admin</th>
+          <th style="padding:10px 14px;border-bottom:2px solid #e5e7eb;">Provider</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:10px 14px;">New registration</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Welcome email</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;background:#fafafa;">
+          <td style="padding:10px 14px;">New booking (cash)</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Confirmed</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ New booking</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:10px 14px;">New booking (online banking)</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Payment under review</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Verify receipt</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;background:#fafafa;">
+          <td style="padding:10px 14px;">Payment verified</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Payment confirmed</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:10px 14px;">Provider assigned</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Provider assigned</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ New job assigned</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;background:#fafafa;">
+          <td style="padding:10px 14px;">Status update (En Route, In Progress, etc.)</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Status update</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:10px 14px;">Job completion pending</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Review & confirm</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;background:#fafafa;">
+          <td style="padding:10px 14px;">Booking rescheduled</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Rescheduled</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Rescheduled</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:10px 14px;">Booking cancelled</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Cancelled</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Cancelled</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;background:#fafafa;">
+          <td style="padding:10px 14px;">Refund processed</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Refund done</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:10px 14px;">Review submitted</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ New review</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ New review</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f3f4f6;background:#fafafa;">
+          <td style="padding:10px 14px;">Leave request submitted</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Leave request</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;">Leave approved/rejected</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#999;">—</td>
+          <td style="padding:10px 14px;color:#16a34a;">✓ Decision</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>
