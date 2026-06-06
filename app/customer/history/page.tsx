@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Calendar, MapPin, Car, Clock, X, Star } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Calendar, MapPin, Car, Clock, X, Star, CheckCircle2 } from "lucide-react";
 import supabase from "@/lib/supabase";
 import { useUser } from "@/hooks/user-provider";
 
@@ -61,6 +61,38 @@ export default function BookingHistoryPage() {
   const [reviewDataByBookingId, setReviewDataByBookingId] = useState<Record<string, { rating: number; comment: string | null; admin_reply: string | null }>>({});
 
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  const [cancelSuccess, setCancelSuccess] = useState<{ service: string; bookingId: string; needsRefund: boolean } | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ oldDate: string; oldTimeSlot: string; newDate: string; newTimeSlot: string } | null>(null);
+
+  const showToast = useCallback((oldDate: string, oldTimeSlot: string, newDate: string, newTimeSlot: string) => {
+    setToast({ oldDate, oldTimeSlot, newDate, newTimeSlot });
+  }, []);
+
+  useEffect(() => {
+    if (!rescheduleDate || !rescheduleTarget) { setBookedSlots(new Set()); return; }
+    supabase
+      .from("bookings")
+      .select("time_slot")
+      .eq("scheduled_date", rescheduleDate)
+      .neq("status", "Cancelled")
+      .neq("id", rescheduleTarget.id)
+      .then(({ data }) => {
+        setBookedSlots(new Set((data ?? []).map((r: any) => r.time_slot)));
+      });
+  }, [rescheduleDate, rescheduleTarget]);
+
+  const isPastSlot = (slot: string, date: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    if (date !== today) return false;
+    const startPart = slot.split(" - ")[0];
+    const [time, period] = startPart.split(" ");
+    let [h, m] = time.split(":").map(Number);
+    if (period === "PM" && h !== 12) h += 12;
+    if (period === "AM" && h === 12) h = 0;
+    const slotTime = new Date(); slotTime.setHours(h, m, 0, 0);
+    return slotTime < new Date();
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -119,15 +151,20 @@ export default function BookingHistoryPage() {
   const handleReschedule = async () => {
     if (!rescheduleTarget || !rescheduleDate || !rescheduleTimeSlot) return;
     setRescheduling(true);
-    const { error } = await supabase
-      .from("bookings")
-      .update({ scheduled_date: rescheduleDate, time_slot: rescheduleTimeSlot })
-      .eq("id", rescheduleTarget.id);
-    if (!error) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/customer/bookings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ id: rescheduleTarget.id, newDate: rescheduleDate, newTimeSlot: rescheduleTimeSlot }),
+    });
+    if (res.ok) {
+      const oldDate = rescheduleTarget.date;
+      const oldTimeSlot = rescheduleTarget.timeSlot;
       setBookings((prev) =>
         prev.map((b) => b.id === rescheduleTarget.id ? { ...b, date: rescheduleDate, timeSlot: rescheduleTimeSlot } : b)
       );
       setRescheduleTarget(null);
+      showToast(oldDate, oldTimeSlot, rescheduleDate, rescheduleTimeSlot);
     }
     setRescheduling(false);
   };
@@ -153,9 +190,22 @@ export default function BookingHistoryPage() {
   };
 
   const handleCancelConfirmed = async (id: string) => {
+    const booking = bookings.find((b) => b.id === id);
     setCancelConfirmId(null);
-    setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: "Cancelled" } : b));
-    await supabase.from("bookings").update({ status: "Cancelled" }).eq("id", id);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/customer/bookings", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) {
+      const { needsRefund } = await res.json();
+      setBookings((prev) => prev.map((b) => b.id === id
+        ? { ...b, status: "Cancelled", paymentStatus: needsRefund ? "Refund Required" : b.paymentStatus }
+        : b
+      ));
+      if (booking) setCancelSuccess({ service: booking.service, bookingId: booking.bookingId, needsRefund });
+    }
   };
 
   return (
@@ -307,7 +357,7 @@ export default function BookingHistoryPage() {
                   type="date"
                   value={rescheduleDate}
                   min={minRescheduleDate}
-                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  onChange={(e) => { setRescheduleDate(e.target.value); setRescheduleTimeSlot(""); }}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 focus:bg-white transition-all"
                 />
               </div>
@@ -319,9 +369,16 @@ export default function BookingHistoryPage() {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 focus:bg-white transition-all"
                 >
                   <option value="">Select a time slot</option>
-                  {timeSlots.map((slot) => (
-                    <option key={slot} value={slot}>{slot}</option>
-                  ))}
+                  {timeSlots.map((slot) => {
+                    const past = isPastSlot(slot, rescheduleDate);
+                    const booked = bookedSlots.has(slot);
+                    const disabled = past || booked;
+                    return (
+                      <option key={slot} value={slot} disabled={disabled}>
+                        {slot}{past ? "  — past" : booked ? "  — unavailable" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </div>
@@ -406,6 +463,62 @@ export default function BookingHistoryPage() {
           </div>
         );
       })()}
+
+      {cancelSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center space-y-5">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+              <X className="w-9 h-9 text-red-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-1">Booking Cancelled</h2>
+              <p className="text-sm text-gray-500 mb-4">{cancelSuccess.service} · {cancelSuccess.bookingId}</p>
+              {cancelSuccess.needsRefund && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-left">
+                  <p className="text-sm font-semibold text-amber-800">Refund in progress</p>
+                  <p className="text-xs text-amber-600 mt-0.5">Your payment will be refunded by our team shortly.</p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setCancelSuccess(null)}
+              className="w-full bg-gray-900 text-white py-3.5 rounded-2xl font-bold hover:bg-gray-800 transition-all"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center space-y-5">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-9 h-9 text-green-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Booking Rescheduled!</h2>
+              <div className="space-y-3 text-sm text-left bg-gray-50 rounded-2xl p-4">
+                <div className="flex gap-3">
+                  <span className="text-gray-400 font-medium w-8 shrink-0">From</span>
+                  <span className="text-gray-600">{toast.oldDate} · {toast.oldTimeSlot}</span>
+                </div>
+                <div className="h-px bg-gray-200" />
+                <div className="flex gap-3">
+                  <span className="text-gray-400 font-medium w-8 shrink-0">To</span>
+                  <span className="text-gray-900 font-bold">{toast.newDate} · {toast.newTimeSlot}</span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setToast(null)}
+              className="w-full bg-gray-900 text-white py-3.5 rounded-2xl font-bold hover:bg-gray-800 transition-all"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

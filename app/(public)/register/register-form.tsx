@@ -35,7 +35,7 @@ export function SignupForm() {
 
     setLoading(true);
 
-    const { data, error: authError } = await supabase.auth.signUp({
+    const { error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
       options: {
@@ -43,29 +43,19 @@ export function SignupForm() {
       },
     });
 
-    if (authError || !data.user) {
-      setError(authError?.message || "Registration failed");
+    if (authError) {
+      setError(authError.message);
       setLoading(false);
       return;
     }
 
-    await supabase.auth.signOut();
-
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: data.user.id,
-      email: formData.email,
-      full_name: formData.fullName,
-      phone: formData.phone,
-      role: "customer",
-      status: "Active",
+    await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: formData.email, fullName: formData.fullName }),
     });
 
-    if (profileError) {
-      setError("Profile creation failed. Please try again.");
-      setLoading(false);
-      return;
-    }
-
+    await supabase.auth.signOut();
     router.push("/register/success");
   };
 
@@ -103,7 +93,7 @@ export function SignupForm() {
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={formData.password} onChange={(e) => handleChange("password", e.target.value)} required className="pr-9" />
-                  <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={showPassword ? "Hide password" : "Show password"}>
+                  <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -112,7 +102,7 @@ export function SignupForm() {
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <div className="relative">
                   <Input id="confirmPassword" type={showConfirm ? "text" : "password"} placeholder="••••••••" value={formData.confirmPassword} onChange={(e) => handleChange("confirmPassword", e.target.value)} required className="pr-9" />
-                  <button type="button" onClick={() => setShowConfirm((p) => !p)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}>
+                  <button type="button" onClick={() => setShowConfirm((p) => !p)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>

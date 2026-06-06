@@ -8,6 +8,7 @@ import {
   emailProviderAssignedToCustomer,
   emailJobAssignedToProvider,
   emailPaymentVerifiedToCustomer,
+  emailRefundProcessedToCustomer,
 } from "@/lib/emailNotifications";
 
 async function requireAdmin(request: Request) {
@@ -201,6 +202,34 @@ export async function PATCH(request: Request) {
     const { id, paymentStatus } = body;
     const { error } = await supabaseAdmin.from("bookings").update({ payment_status: paymentStatus }).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    if (paymentStatus === "Refunded") {
+      const { data: booking } = await supabaseAdmin
+        .from("bookings")
+        .select("booking_id, user_id, customer_name, service_name, scheduled_date")
+        .eq("id", id)
+        .single();
+
+      if (booking) {
+        const customerEmail = await getUserEmail(booking.user_id);
+        await Promise.all([
+          notifyUser({
+            userId: booking.user_id,
+            title: "Refund processed",
+            message: `Your refund for the ${booking.service_name} booking on ${booking.scheduled_date} has been processed.`,
+            type: "booking",
+            bookingId: booking.booking_id,
+          }),
+          customerEmail && emailRefundProcessedToCustomer(customerEmail, {
+            customerName: booking.customer_name,
+            serviceName: booking.service_name,
+            scheduledDate: booking.scheduled_date,
+            bookingId: booking.booking_id,
+          }),
+        ]);
+      }
+    }
+
     return NextResponse.json({ ok: true });
   }
 

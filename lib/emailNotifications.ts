@@ -244,6 +244,97 @@ export async function emailLeaveStatusToProvider(providerEmail: string, l: {
   await send(providerEmail, `Leave Request ${l.status} — ${l.date}`, html);
 }
 
+// 13. Booking rescheduled → customer
+export async function emailRescheduleToCustomer(customerEmail: string, b: {
+  customerName: string; serviceName: string; oldDate: string; oldTimeSlot: string; newDate: string; newTimeSlot: string; bookingId: string;
+}) {
+  const html = shell("Booking Rescheduled", `
+    <p style="margin:12px 0 0;color:#555555;font-size:14px;">Hi ${b.customerName}, your booking has been rescheduled successfully.</p>
+    ${table(
+      row("Booking ID", b.bookingId) +
+      row("Service", b.serviceName) +
+      row("Previous Date", `${b.oldDate} · ${b.oldTimeSlot}`) +
+      row("New Date", `${b.newDate} · ${b.newTimeSlot}`)
+    )}
+    ${note("If you did not make this change, please contact us immediately.")}
+  `);
+  await send(customerEmail, `Booking Rescheduled — ${b.bookingId}`, html);
+}
+
+// 14. Booking rescheduled → admins
+export async function emailRescheduleToAdmins(adminEmails: string[], b: {
+  customerName: string; serviceName: string; oldDate: string; oldTimeSlot: string; newDate: string; newTimeSlot: string; bookingId: string;
+}) {
+  const html = shell("Booking Rescheduled by Customer", `
+    <p style="margin:12px 0 0;color:#555555;font-size:14px;">A customer has rescheduled their booking.</p>
+    ${table(
+      row("Booking ID", b.bookingId) +
+      row("Customer", b.customerName) +
+      row("Service", b.serviceName) +
+      row("Previous Date", `${b.oldDate} · ${b.oldTimeSlot}`) +
+      row("New Date", `${b.newDate} · ${b.newTimeSlot}`)
+    )}
+    ${note("Log in to the admin panel to review the updated schedule.")}
+  `);
+  await send(adminEmails, `Booking Rescheduled — ${b.bookingId}`, html);
+}
+
+// 0. Welcome email → new customer
+export async function emailWelcomeToCustomer(customerEmail: string, customerName: string) {
+  const html = shell("Welcome to Das Auto Spa!", `
+    <p style="margin:12px 0 0;color:#555555;font-size:14px;">Hi ${customerName}, welcome aboard! Your account has been created successfully.</p>
+    <p style="margin:12px 0 0;color:#555555;font-size:14px;">You can now book our door-to-door car wash service anytime, right from your phone or computer.</p>
+    ${table(
+      row("Service", "Door-to-Door Car Wash") +
+      row("Coverage", "Klang Valley") +
+      row("Support", "dasautospafyp@gmail.com")
+    )}
+    ${note("If you did not create this account, please ignore this email.")}
+  `);
+  await send(customerEmail, "Welcome to Das Auto Spa!", html);
+}
+
+// 15. Refund processed → customer
+export async function emailRefundProcessedToCustomer(customerEmail: string, b: {
+  customerName: string; serviceName: string; scheduledDate: string; bookingId: string;
+}) {
+  const html = shell("Refund Processed", `
+    <p style="margin:12px 0 0;color:#555555;font-size:14px;">Hi ${b.customerName}, your refund has been processed successfully.</p>
+    ${table(row("Booking ID", b.bookingId) + row("Service", b.serviceName) + row("Date", b.scheduledDate) + row("Refund Status", "✓ Refunded"))}
+    ${note("Please allow 1–3 business days for the amount to appear in your account depending on your bank.")}
+  `);
+  await send(customerEmail, `Refund Processed — ${b.bookingId}`, html);
+}
+
+// 16. Booking cancelled → customer
+export async function emailCancellationToCustomer(customerEmail: string, b: {
+  customerName: string; serviceName: string; scheduledDate: string; timeSlot: string; bookingId: string; needsRefund: boolean;
+}) {
+  const refundNote = b.needsRefund
+    ? `<p style="margin:16px 0 0;padding:12px 16px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;font-size:13px;color:#92400e;">Your previous payment will be refunded. Our team will process it shortly and contact you if needed.</p>`
+    : "";
+  const html = shell("Booking Cancelled", `
+    <p style="margin:12px 0 0;color:#555555;font-size:14px;">Hi ${b.customerName}, your booking has been cancelled successfully.</p>
+    ${table(row("Booking ID", b.bookingId) + row("Service", b.serviceName) + row("Date", b.scheduledDate) + row("Time", b.timeSlot))}
+    ${refundNote}
+    ${note("If you did not make this change, please contact us immediately.")}
+  `);
+  await send(customerEmail, `Booking Cancelled — ${b.bookingId}`, html);
+}
+
+// 16. Booking cancelled → admins
+export async function emailCancellationToAdmins(adminEmails: string[], b: {
+  customerName: string; serviceName: string; scheduledDate: string; timeSlot: string; bookingId: string; needsRefund: boolean;
+}) {
+  const refundRow = b.needsRefund ? row("Action Required", "⚠️ Refund Required — customer paid via online banking") : "";
+  const html = shell("Booking Cancelled by Customer", `
+    <p style="margin:12px 0 0;color:#555555;font-size:14px;">A customer has cancelled their booking.</p>
+    ${table(row("Booking ID", b.bookingId) + row("Customer", b.customerName) + row("Service", b.serviceName) + row("Date", b.scheduledDate) + row("Time", b.timeSlot) + refundRow)}
+    ${note("The time slot is now available for other bookings.")}
+  `);
+  await send(adminEmails, `Booking Cancelled${b.needsRefund ? " — Refund Required" : ""} — ${b.bookingId}`, html);
+}
+
 // 10. Review submitted → provider
 export async function emailReviewToProvider(providerEmail: string, r: {
   customerName: string; serviceName: string; scheduledDate: string; rating: number; comment: string | null;

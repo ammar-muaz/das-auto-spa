@@ -48,6 +48,8 @@ export default function AdminUsersPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [deleteSuccess, setDeleteSuccess] = useState<{ name: string } | null>(null);
+  const [statusSuccess, setStatusSuccess] = useState<{ name: string; status: "Active" | "Inactive" } | null>(null);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -80,13 +82,21 @@ export default function AdminUsersPage() {
   });
 
   const handleDeactivate = async (email: string) => {
+    const user = users.find((u) => u.email === email);
     const { error } = await supabase.from("profiles").update({ status: "Inactive" }).eq("email", email);
-    if (!error) setUsers((prev) => prev.map((u) => u.email === email ? { ...u, status: "Inactive" } : u));
+    if (!error) {
+      setUsers((prev) => prev.map((u) => u.email === email ? { ...u, status: "Inactive" } : u));
+      setStatusSuccess({ name: user?.fullName || email, status: "Inactive" });
+    }
   };
 
   const handleActivate = async (email: string) => {
+    const user = users.find((u) => u.email === email);
     const { error } = await supabase.from("profiles").update({ status: "Active" }).eq("email", email);
-    if (!error) setUsers((prev) => prev.map((u) => u.email === email ? { ...u, status: "Active" } : u));
+    if (!error) {
+      setUsers((prev) => prev.map((u) => u.email === email ? { ...u, status: "Active" } : u));
+      setStatusSuccess({ name: user?.fullName || email, status: "Active" });
+    }
   };
 
   const handleCreateProvider = async () => {
@@ -113,6 +123,7 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    const user = users.find((u) => u.id === userId);
     setIsRemoving(true);
     try {
       const res = await fetch("/api/admin/delete-user", {
@@ -124,6 +135,7 @@ export default function AdminUsersPage() {
       if (!res.ok) { setDeleteError(json.error || "Failed to delete user."); return; }
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       setSelectedUser((prev) => prev?.id === userId ? null : prev);
+      setDeleteSuccess({ name: user?.fullName || "User" });
     } catch {
       setDeleteError("An unexpected error occurred.");
     } finally {
@@ -422,6 +434,47 @@ export default function AdminUsersPage() {
                 {isRemoving ? "Removing..." : "Yes, Delete"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Success Modal */}
+      {deleteSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center space-y-5">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-9 h-9 text-green-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-1">User Deleted</h2>
+              <p className="text-sm text-gray-500"><span className="font-semibold text-gray-700">{deleteSuccess.name}</span> has been removed from the system.</p>
+            </div>
+            <button onClick={() => setDeleteSuccess(null)} className="w-full bg-gray-900 text-white py-3.5 rounded-2xl font-bold hover:bg-gray-800 transition-all">
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Status Change Success Modal */}
+      {statusSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center space-y-5">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${statusSuccess.status === "Active" ? "bg-green-100" : "bg-red-100"}`}>
+              <CheckCircle2 className={`w-9 h-9 ${statusSuccess.status === "Active" ? "text-green-600" : "text-red-500"}`} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-1">
+                {statusSuccess.status === "Active" ? "User Activated" : "User Deactivated"}
+              </h2>
+              <p className="text-sm text-gray-500">
+                <span className="font-semibold text-gray-700">{statusSuccess.name}</span> is now{" "}
+                <span className={`font-semibold ${statusSuccess.status === "Active" ? "text-green-600" : "text-red-500"}`}>{statusSuccess.status}</span>.
+              </p>
+            </div>
+            <button onClick={() => setStatusSuccess(null)} className="w-full bg-gray-900 text-white py-3.5 rounded-2xl font-bold hover:bg-gray-800 transition-all">
+              Continue
+            </button>
           </div>
         </div>
       )}

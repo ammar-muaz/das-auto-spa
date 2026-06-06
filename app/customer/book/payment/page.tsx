@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Banknote, CheckCircle, ChevronLeft, Lock, CreditCard, Building2, Upload, FileText, X } from "lucide-react";
+import { Banknote, CheckCircle, ChevronLeft, Building2, Upload, FileText, X } from "lucide-react";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
 
-type PaymentMethod = "online" | "cash" | "online_banking";
-type Stage = "select" | "mock-payment" | "online-banking" | "processing";
+type PaymentMethod = "cash" | "online_banking";
+type Stage = "select" | "online-banking" | "processing";
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -16,10 +16,6 @@ export default function PaymentPage() {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [stage, setStage] = useState<Stage>("select");
   const [processing, setProcessing] = useState(false);
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [cardName, setCardName] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const hasSubmittedRef = useRef(false);
@@ -97,7 +93,7 @@ export default function PaymentPage() {
       carDetails,
       amount: totalAmount,
       paymentMethod,
-      paymentStatus: paymentMethod === "cash" ? "Pending" : paymentMethod === "online_banking" ? "Pending Verification" : "Paid",
+      paymentStatus: paymentMethod === "cash" ? "Pending" : "Pending Verification",
     }));
 
     sessionStorage.removeItem("booking:car-details");
@@ -111,15 +107,7 @@ export default function PaymentPage() {
   const handleMethodConfirm = () => {
     if (!selectedMethod) return;
     if (selectedMethod === "cash") createBooking("cash");
-    else if (selectedMethod === "online") setStage("mock-payment");
     else setStage("online-banking");
-  };
-
-  const handleMockPay = async () => {
-    if (!cardNumber || !expiry || !cvv || !cardName) return;
-    setStage("processing");
-    await new Promise((r) => setTimeout(r, 2000));
-    await createBooking("online");
   };
 
   const handleOnlineBankingSubmit = async () => {
@@ -146,12 +134,6 @@ export default function PaymentPage() {
       alert(`Upload failed: ${err?.message || "Please try again."}`);
     }
   };
-
-  const formatCardNumber = (val: string) =>
-    val.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
-
-  const formatExpiry = (val: string) =>
-    val.replace(/\D/g, "").slice(0, 4).replace(/^(\d{2})(\d)/, "$1/$2");
 
   // ── Processing ──
   if (stage === "processing") {
@@ -247,74 +229,6 @@ export default function PaymentPage() {
     );
   }
 
-  // ── Mock card payment ──
-  if (stage === "mock-payment") {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-        <div className="max-w-md mx-auto space-y-6">
-          <button onClick={() => setStage("select")} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-medium transition-colors">
-            <ChevronLeft className="w-4 h-4" /><span>Back</span>
-          </button>
-
-          <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-3xl p-6 text-white shadow-xl">
-            <div className="flex justify-between items-start mb-8">
-              <div>
-                <p className="text-xs opacity-60 uppercase tracking-widest">Das Auto Spa</p>
-                <p className="text-sm font-bold mt-1">Secure Payment</p>
-              </div>
-              <CreditCard className="w-8 h-8 opacity-60" />
-            </div>
-            <p className="text-xl font-mono tracking-widest mb-6">{cardNumber || "•••• •••• •••• ••••"}</p>
-            <div className="flex justify-between items-end">
-              <div>
-                <p className="text-xs opacity-60 uppercase">Card Holder</p>
-                <p className="text-sm font-bold">{cardName || "YOUR NAME"}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs opacity-60 uppercase">Expires</p>
-                <p className="text-sm font-bold">{expiry || "MM/YY"}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs opacity-60 uppercase">Amount</p>
-                <p className="text-lg font-black">RM {amount}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Lock className="w-4 h-4 text-gray-400" />
-              <span className="text-xs text-gray-400 font-medium">Secured with 256-bit encryption</span>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Card Number</label>
-              <input type="text" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={(e) => setCardNumber(formatCardNumber(e.target.value))} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-gray-900 outline-none font-mono" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Card Holder Name</label>
-              <input type="text" placeholder="Name as on card" value={cardName} onChange={(e) => setCardName(e.target.value.toUpperCase())} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-gray-900 outline-none" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Expiry Date</label>
-                <input type="text" placeholder="MM/YY" value={expiry} onChange={(e) => setExpiry(formatExpiry(e.target.value))} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-gray-900 outline-none font-mono" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">CVV</label>
-                <input type="password" placeholder="•••" value={cvv} maxLength={3} onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 3))} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-gray-900 outline-none font-mono" />
-              </div>
-            </div>
-          </div>
-
-          <button onClick={handleMockPay} disabled={!cardNumber || !expiry || !cvv || !cardName} className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all flex items-center justify-center gap-2">
-            <Lock className="w-5 h-5" />
-            Pay RM {amount}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // ── Method selection ──
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -338,7 +252,6 @@ export default function PaymentPage() {
           <h3 className="text-gray-800 font-bold mb-6">Select Payment Method</h3>
           <div className="space-y-3">
             {[
-              { id: "online" as PaymentMethod, name: "Credit / Debit Card", icon: CreditCard, description: "Visa, Mastercard, E-Wallet" },
               { id: "online_banking" as PaymentMethod, name: "Online Banking", icon: Building2, description: "FPX / DuitNow QR — upload receipt after paying" },
               { id: "cash" as PaymentMethod, name: "Cash on Service", icon: Banknote, description: "Pay when detailing is done" },
             ].map((method) => {
