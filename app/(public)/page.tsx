@@ -211,7 +211,7 @@ export default function Home() {
       {/* ──────────────── ABOUT ──────────────── */}
       <section id="about" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
             <div>
               <span className="text-gray-400 font-semibold text-sm uppercase tracking-widest">About Us</span>
               <h2 className="text-4xl font-bold text-gray-900 mt-3 mb-6 leading-snug">
@@ -247,7 +247,7 @@ export default function Home() {
                 { number: '12+', desc: 'Service Areas' },
                 { number: '100%', desc: 'Satisfaction Guarantee' },
               ].map((item) => (
-                <div key={item.number} className="bg-gray-900 rounded-2xl p-8 text-center text-white">
+                <div key={item.number} className="bg-gray-900 rounded-2xl p-4 md:p-8 text-center text-white">
                   <p className="text-4xl font-bold text-gray-100 mb-2">{item.number}</p>
                   <p className="text-gray-400 text-sm leading-snug">{item.desc}</p>
                 </div>
@@ -338,7 +338,7 @@ export default function Home() {
             <p className="text-gray-500 max-w-lg mx-auto">Getting a professional car wash has never been easier.</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10">
             {steps.map((s, i) => (
               <div key={s.step} className="relative text-center">
                 {i < steps.length - 1 && (
@@ -398,13 +398,13 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+          <div className="grid sm:grid-cols-3 gap-4 md:gap-6 max-w-3xl mx-auto">
             {[
               { icon: Phone, label: 'Phone', value: '+60 19-325 3883', sub: 'Mon–Sun, 8AM – 8PM' },
               { icon: Mail, label: 'Email', value: 'support@dasautospa.com', sub: 'We reply within 24 hours' },
               { icon: MapPin, label: 'Coverage', value: 'Klang Valley, Malaysia', sub: 'Door-to-door service' },
             ].map(({ icon: Icon, label, value, sub }) => (
-              <div key={label} className="text-center bg-gray-50 rounded-2xl p-8 border border-gray-100">
+              <div key={label} className="text-center bg-gray-50 rounded-2xl p-5 md:p-8 border border-gray-100">
                 <div className="w-14 h-14 bg-gray-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Icon className="w-6 h-6 text-white" />
                 </div>
@@ -429,7 +429,7 @@ export default function Home() {
       {/* ──────────────── FOOTER ──────────────── */}
       <footer className="bg-gray-950 text-white py-16">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-10 mb-12">
+          <div className="grid md:grid-cols-4 gap-6 md:gap-10 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
                 <Image src="/logo.png" alt="Das Auto Spa" width={30} height={30} className="rounded-lg" />

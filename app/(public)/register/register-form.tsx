@@ -88,7 +88,7 @@ export function SignupForm() {
               <Input id="phone" type="tel" placeholder="+60 12-345 6789" value={formData.phone} onChange={(e) => handleChange("phone", e.target.value)} required />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">

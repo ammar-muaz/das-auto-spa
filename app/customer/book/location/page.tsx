@@ -391,7 +391,7 @@ export default function LocationDatePage() {
                         <p className="text-sm font-medium">No available slots for this date. Please choose another date.</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {timeSlots.map((slot) => {
                           const disabled = isSlotDisabled(slot);
                           const booked = !loadingSlots && isSlotBooked(slot);

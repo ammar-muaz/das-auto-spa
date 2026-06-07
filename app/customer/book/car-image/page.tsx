@@ -222,7 +222,7 @@ export default function CarImagePage() {
             </div>
           ) : !selectedImage ? (
             /* State 1: Upload prompt */
-            <div className="border-2 border-dashed border-gray-200 rounded-3xl p-12 text-center mb-8 hover:border-blue-400 hover:bg-gray-50/30 transition-all group">
+            <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 md:p-12 text-center mb-8 hover:border-blue-400 hover:bg-gray-50/30 transition-all group">
               <label className="cursor-pointer">
                 <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">

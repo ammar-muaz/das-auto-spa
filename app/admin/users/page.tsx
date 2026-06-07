@@ -154,7 +154,7 @@ export default function AdminUsersPage() {
     <main className="flex-1 overflow-y-auto p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-8 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 mb-1">Manage Users</h1>
             <p className="text-gray-500">Directory of customers, providers, and administrators</p>
@@ -165,7 +165,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
           <Card className="bg-gradient-to-t from-primary/5 to-card shadow-xs">
             <CardHeader>
               <CardDescription>Total Users</CardDescription>

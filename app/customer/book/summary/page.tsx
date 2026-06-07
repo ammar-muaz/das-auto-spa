@@ -195,7 +195,7 @@ export default function BookingSummaryPage() {
         <button onClick={() => router.push("/customer/book/location")} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-medium transition-colors">
           <ChevronLeft className="w-4 h-4" /><span>Back</span>
         </button>
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-1">Booking Summary</h1>
           <p className="text-gray-500">Step 5: Final review before secure payment</p>
         </div>
@@ -260,7 +260,7 @@ export default function BookingSummaryPage() {
               <p className="text-xs font-bold text-gray-400 uppercase mb-1">Service Area</p>
               <p className="text-gray-800">{draft.location.selectedArea || "-"}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase mb-1">Date</p>
                 <div className="flex items-center gap-2 font-medium text-gray-800">

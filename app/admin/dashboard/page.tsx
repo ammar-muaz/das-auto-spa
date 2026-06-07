@@ -142,7 +142,7 @@ export default function AdminDashboardPage() {
           </header>
 
           {/* STATS CARDS */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
             {[
               { label: "Total Bookings", val: bookings.length, icon: ClipboardList, desc: "All time bookings" },
               { label: "Today's Bookings", val: todaysBookings.length, icon: Calendar, desc: "Scheduled for today" },
@@ -225,24 +225,24 @@ export default function AdminDashboardPage() {
                 {todaysBookings
                   .sort((a, b) => a.timeSlot.localeCompare(b.timeSlot))
                   .map((booking) => (
-                    <div key={booking.id} className={`flex items-center gap-4 px-6 py-4 hover:bg-gray-50/50 transition-colors ${!booking.assignedTo ? "border-l-4 border-orange-400" : "border-l-4 border-transparent"}`}>
-                      <div className="w-20 shrink-0">
-                        <p className="text-xs font-bold text-gray-900">{booking.timeSlot}</p>
+                    <div key={booking.id} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 md:px-6 py-3 md:py-4 hover:bg-gray-50/50 transition-colors ${!booking.assignedTo ? "border-l-4 border-orange-400" : "border-l-4 border-transparent"}`}>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="shrink-0">
+                          <p className="text-xs font-bold text-gray-900 whitespace-nowrap">{booking.timeSlot}</p>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{booking.customerName}</p>
+                          <p className="text-xs text-gray-400 truncate">{booking.service} · {booking.carDetails}</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{booking.customerName}</p>
-                        <p className="text-xs text-gray-400 truncate">{booking.service} · {booking.carDetails}</p>
-                      </div>
-                      <div className="shrink-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {!booking.assignedTo ? (
-                          <span className="text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full">Unassigned</span>
+                          <span className="text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full whitespace-nowrap">Unassigned</span>
                         ) : (
-                          <span className="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full truncate max-w-[120px] block text-center">{booking.assignedTo}</span>
+                          <span className="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full truncate max-w-[120px]">{booking.assignedTo}</span>
                         )}
-                      </div>
-                      <div className="shrink-0 flex flex-col items-end gap-1.5">
-                        <span className={`text-xs font-semibold py-1 rounded-full border text-center w-32 ${getStatusColor(booking.status)}`}>{booking.status}</span>
-                        <span className={`text-xs font-semibold py-1 rounded-full border text-center w-32 ${getPaymentBadgeStyle(booking.paymentStatus)}`}>{booking.paymentStatus}</span>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${getStatusColor(booking.status)}`}>{booking.status}</span>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${getPaymentBadgeStyle(booking.paymentStatus)}`}>{booking.paymentStatus}</span>
                       </div>
                     </div>
                   ))}
@@ -264,17 +264,17 @@ export default function AdminDashboardPage() {
             ) : (
               <div className="divide-y divide-gray-50">
                 {bookings.slice(0, 8).map((booking) => (
-                  <div key={booking.id} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50/50 transition-colors">
+                  <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 md:px-6 py-3 hover:bg-gray-50/50 transition-colors">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold text-gray-900 truncate">{booking.customerName}</p>
                         <span className="text-xs text-gray-300 font-mono shrink-0">{booking.bookingId}</span>
                       </div>
-                      <p className="text-xs text-gray-400">{booking.service} · {booking.date} {booking.timeSlot}</p>
+                      <p className="text-xs text-gray-400 truncate">{booking.service} · {booking.date} {booking.timeSlot}</p>
                     </div>
-                    <div className="shrink-0 flex flex-col items-end gap-1.5">
-                      <span className={`text-xs font-semibold py-1 rounded-full border text-center w-32 ${getStatusColor(booking.status)}`}>{booking.status}</span>
-                      <span className={`text-xs font-semibold py-1 rounded-full border text-center w-32 ${getPaymentBadgeStyle(booking.paymentStatus)}`}>{booking.paymentStatus}</span>
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-col sm:items-end">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${getStatusColor(booking.status)}`}>{booking.status}</span>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${getPaymentBadgeStyle(booking.paymentStatus)}`}>{booking.paymentStatus}</span>
                     </div>
                   </div>
                 ))}
@@ -286,7 +286,7 @@ export default function AdminDashboardPage() {
 
       {/* FOOTER */}
       <footer className="bg-gray-800 text-gray-100 pt-12 pb-6 mt-8">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 grid md:grid-cols-3 gap-12 border-b border-gray-900/50 pb-12 mb-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 border-b border-gray-900/50 pb-12 mb-6">
           <div>
             <div className="flex items-center gap-2 text-white mb-4">
               <Sparkles className="w-6 h-6 text-gray-300" />

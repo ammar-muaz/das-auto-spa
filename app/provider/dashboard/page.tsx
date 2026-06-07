@@ -149,7 +149,7 @@ export default function ProviderDashboardPage() {
           </header>
 
               {/* Stats cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
                 <Card className="bg-gradient-to-t from-primary/5 to-card shadow-xs">
                   <CardHeader>
                     <CardDescription>Today&apos;s Jobs</CardDescription>
@@ -189,7 +189,7 @@ export default function ProviderDashboardPage() {
               </div>
 
               {/* Job tabs */}
-              <section className="bg-white rounded-2xl border border-gray-100 p-6">
+              <section className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
                 <div className="flex bg-gray-100 p-1 rounded-xl mb-6 gap-1">
                   <button
                     onClick={() => setDashboardTab("today")}

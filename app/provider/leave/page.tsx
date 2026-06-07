@@ -142,7 +142,7 @@ export default function ProviderLeavePage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6">
             {[
               { label: "Pending", count: pendingCount, color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-100" },
               { label: "Approved", count: approvedCount, color: "text-green-600", bg: "bg-green-50", border: "border-green-100" },

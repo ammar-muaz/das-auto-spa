@@ -259,7 +259,7 @@ export default function AdminReportsPage() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6">
             {[
               { label: "Total Bookings", val: totalBookings, desc: "All recorded bookings", icon: Calendar },
               { label: "Completed", val: completedBookings, desc: "Successfully delivered", icon: CheckCircle },
