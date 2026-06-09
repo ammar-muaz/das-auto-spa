@@ -232,15 +232,23 @@ export default function CarImagePage() {
             </div>
           ) : !selectedImage ? (
             /* State 1: Upload prompt */
-            <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 md:p-12 text-center mb-8 hover:border-blue-400 hover:bg-gray-50/30 transition-all group">
-              <label className="cursor-pointer">
-                <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Camera className="w-10 h-10 text-gray-400" />
+            <div className="mb-8">
+              <div className={`border-2 border-dashed rounded-3xl p-6 md:p-12 text-center hover:bg-gray-50/30 transition-all group ${uploadError ? "border-red-300 bg-red-50/30" : "border-gray-200 hover:border-blue-400"}`}>
+                <label className="cursor-pointer">
+                  <input type="file" accept="image/*" onChange={(e) => { setUploadError(""); handleImageSelect(e); }} className="hidden" />
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform ${uploadError ? "bg-red-100" : "bg-gray-50"}`}>
+                    <Camera className={`w-10 h-10 ${uploadError ? "text-red-400" : "text-gray-400"}`} />
+                  </div>
+                  <p className="text-lg font-bold text-gray-800 mb-1">Click to Upload Image</p>
+                  <p className="text-sm text-gray-500">Supports: JPG, PNG (Max 10MB)</p>
+                </label>
+              </div>
+              {uploadError && (
+                <div className="mt-3 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-4 py-3 rounded-xl">
+                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span>{uploadError}</span>
                 </div>
-                <p className="text-lg font-bold text-gray-800 mb-1">Click to Upload Image</p>
-                <p className="text-sm text-gray-500">Supports: JPG, PNG (Max 10MB)</p>
-              </label>
+              )}
             </div>
           ) : (
             /* State 2: Image selected, ready to analyze */
