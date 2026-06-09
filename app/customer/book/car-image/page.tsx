@@ -88,8 +88,13 @@ export default function CarImagePage() {
         throw new Error(err.error || "Analysis failed");
       }
 
-      const { dirtLevel } = await aiRes.json() as { dirtLevel: DirtLevel };
+      const aiJson = await aiRes.json() as { isCar?: boolean; dirtLevel?: DirtLevel };
 
+      if (aiJson.isCar === false) {
+        throw new Error("No car detected. Please upload a clear photo of your vehicle.");
+      }
+
+      const dirtLevel = aiJson.dirtLevel ?? "Moderate";
       const publicUrl = await uploadPublicImage("car-images", selectedFile, "ai-analysis");
 
       const { data: auth } = await supabase.auth.getUser();
@@ -105,7 +110,12 @@ export default function CarImagePage() {
       sessionStorage.setItem(AI_SESSION_KEY, JSON.stringify({ imageUrl: publicUrl, dirtLevel }));
       setAnalysisResult({ dirtLevel, imageUrl: publicUrl });
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Analysis failed. Please try again.");
+      const msg = error instanceof Error ? error.message : "Analysis failed. Please try again.";
+      setUploadError(msg);
+      if (msg.includes("No car detected")) {
+        setSelectedImage(null);
+        setSelectedFile(null);
+      }
     } finally {
       setAnalyzing(false);
     }
