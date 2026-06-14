@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { sendPushToUser } from "@/lib/pushNotifications";
 
 interface NotifyParams {
   userId: string;
@@ -10,13 +11,16 @@ interface NotifyParams {
 
 export async function notifyUser({ userId, title, message, type = "general", bookingId }: NotifyParams) {
   if (!userId) return;
-  await supabaseAdmin.from("notifications").insert({
-    user_id: userId,
-    title,
-    message,
-    type,
-    booking_id: bookingId,
-  });
+  await Promise.all([
+    supabaseAdmin.from("notifications").insert({
+      user_id: userId,
+      title,
+      message,
+      type,
+      booking_id: bookingId,
+    }),
+    sendPushToUser(userId, title, message, { type, bookingId: bookingId ?? "" }),
+  ]);
 }
 
 export async function notifyAdmins({ title, message, type = "general", bookingId }: Omit<NotifyParams, "userId">) {
