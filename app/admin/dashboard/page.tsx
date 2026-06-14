@@ -57,6 +57,7 @@ export default function AdminDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [todayLeaveProviderIds, setTodayLeaveProviderIds] = useState<Set<string>>(new Set());
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -123,6 +124,16 @@ export default function AdminDashboardPage() {
     };
 
     load();
+  }, [refreshKey]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        setRefreshKey(k => k + 1);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const todaysBookings = bookings.filter((b) => b.date === today);

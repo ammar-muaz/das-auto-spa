@@ -22,6 +22,7 @@ export default function ProviderReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [ratingFilter, setRatingFilter] = useState<number | "all">("all");
   const [reviewSort, setReviewSort] = useState<"newest" | "oldest" | "highest" | "lowest">("newest");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!userId || !email) return;
@@ -47,7 +48,17 @@ export default function ProviderReviewsPage() {
       setLoading(false);
     };
     load();
-  }, [userId, email]);
+  }, [userId, email, refreshKey]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('provider-reviews-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        setRefreshKey(k => k + 1);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const renderStars = (rating: number) =>
     [1, 2, 3, 4, 5].map((s) => (

@@ -71,6 +71,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [submitStatus, setSubmitStatus] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const isSubmittingRef = useRef(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     supabase
@@ -104,6 +105,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         }
         setLoading(false);
       });
+  }, [id, refreshKey]);
+
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`provider-job-detail-${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `id=eq.${id}` }, () => {
+        setRefreshKey(k => k + 1);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [id]);
 
   useEffect(() => {

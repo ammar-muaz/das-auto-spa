@@ -52,6 +52,7 @@ export default function BookingHistoryPage() {
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleTimeSlot, setRescheduleTimeSlot] = useState("");
   const [rescheduling, setRescheduling] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [ratingTarget, setRatingTarget] = useState<Booking | null>(null);
   const [ratingValue, setRatingValue] = useState(0);
@@ -140,7 +141,17 @@ export default function BookingHistoryPage() {
     };
 
     load();
-  }, [userId]);
+  }, [userId, refreshKey]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('customer-history-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        setRefreshKey(k => k + 1);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const sortedBookings = [...bookings]
     .filter((b) => !filterDate || b.date === filterDate)

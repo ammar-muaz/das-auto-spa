@@ -51,6 +51,7 @@ export default function ProviderDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [reviewsByBookingId, setReviewsByBookingId] = useState<Record<string, number>>({});
   const [dashboardTab, setDashboardTab] = useState<"today" | "all">("today");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!userId || !email) return;
@@ -97,7 +98,17 @@ export default function ProviderDashboardPage() {
     };
 
     load();
-  }, [userId, email]);
+  }, [userId, email, refreshKey]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('provider-dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        setRefreshKey(k => k + 1);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
     const { data: { session } } = await supabase.auth.getSession();

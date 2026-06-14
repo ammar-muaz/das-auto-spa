@@ -31,6 +31,7 @@ export default function ProviderJobsPage() {
   const [loading, setLoading] = useState(true);
   const [historyFilterDate, setHistoryFilterDate] = useState("");
   const [reviewsByBookingId, setReviewsByBookingId] = useState<Record<string, number>>({});
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!userId || !email) return;
@@ -53,7 +54,17 @@ export default function ProviderJobsPage() {
         }
         setLoading(false);
       });
-  }, [userId, email]);
+  }, [userId, email, refreshKey]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('provider-jobs-history-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        setRefreshKey(k => k + 1);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   useEffect(() => {
     if (bookings.length === 0) return;

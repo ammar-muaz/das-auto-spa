@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Search, Filter, Calendar, AlertCircle, CheckCircle2, Clock,
   Loader2, Banknote, CalendarOff, Receipt, ExternalLink
@@ -68,58 +68,64 @@ export default function AdminBookingsPage() {
   const [filterDate, setFilterDate] = useState("");
   const [filterProvider, setFilterProvider] = useState("all");
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const response = await fetch("/api/admin/bookings", {
-        cache: "no-store",
-        headers: sessionData.session?.access_token
-          ? { Authorization: `Bearer ${sessionData.session.access_token}` }
-          : undefined,
+  const load = useCallback(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const response = await fetch("/api/admin/bookings", {
+      cache: "no-store",
+      headers: sessionData.session?.access_token
+        ? { Authorization: `Bearer ${sessionData.session.access_token}` }
+        : undefined,
+    });
+    if (!response.ok) return;
+    const payload = await response.json();
+    const bookingData = payload.bookings;
+
+    if (bookingData) {
+      setBookings(bookingData.map((row: any) => ({
+        id: row.id,
+        bookingId: row.booking_id,
+        customerName: row.customer_name,
+        service: row.service_name,
+        date: row.scheduled_date,
+        timeSlot: row.time_slot,
+        address: row.address,
+        amount: Number(row.amount),
+        status: row.status,
+        paymentStatus: row.payment_status || "Pending",
+        paymentMethod: row.payment_method || undefined,
+        assignedTo: row.assigned_to || undefined,
+        paymentReceiptUrl: row.payment_receipt_url || undefined,
+      })));
+    }
+
+    const providerData = payload.providers;
+    if (providerData) {
+      setProviders(providerData.map((row: any) => ({ id: row.id, email: row.email, name: row.full_name })));
+    }
+
+    const leaveData = payload.leaves;
+    if (leaveData) {
+      const leaveMap: Record<string, Set<string>> = {};
+      leaveData.forEach((row: any) => {
+        const dateStr = row.date.split("T")[0];
+        if (!leaveMap[row.provider_id]) leaveMap[row.provider_id] = new Set();
+        leaveMap[row.provider_id].add(dateStr);
       });
-      if (!response.ok) return;
-      const payload = await response.json();
-      const bookingData = payload.bookings;
-
-      if (bookingData) {
-        setBookings(bookingData.map((row: any) => ({
-          id: row.id,
-          bookingId: row.booking_id,
-          customerName: row.customer_name,
-          service: row.service_name,
-          date: row.scheduled_date,
-          timeSlot: row.time_slot,
-          address: row.address,
-          amount: Number(row.amount),
-          status: row.status,
-          paymentStatus: row.payment_status || "Pending",
-          paymentMethod: row.payment_method || undefined,
-          assignedTo: row.assigned_to || undefined,
-          paymentReceiptUrl: row.payment_receipt_url || undefined,
-        })));
-      }
-
-      const providerData = payload.providers;
-
-      if (providerData) {
-        setProviders(providerData.map((row: any) => ({ id: row.id, email: row.email, name: row.full_name })));
-      }
-
-      const leaveData = payload.leaves;
-
-      if (leaveData) {
-        const leaveMap: Record<string, Set<string>> = {};
-        leaveData.forEach((row: any) => {
-          const dateStr = row.date.split("T")[0];
-          if (!leaveMap[row.provider_id]) leaveMap[row.provider_id] = new Set();
-          leaveMap[row.provider_id].add(dateStr);
-        });
-        setApprovedLeaves(leaveMap);
-      }
-    };
-
-    load();
+      setApprovedLeaves(leaveMap);
+    }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-bookings-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        load();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load]);
 
   const adminPatch = async (body: Record<string, unknown>) => {
     const { data: sessionData } = await supabase.auth.getSession();
