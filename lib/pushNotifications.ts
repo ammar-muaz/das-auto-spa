@@ -17,7 +17,7 @@ export async function sendPushToUser(
   if (!token || !token.startsWith("ExponentPushToken[")) return;
 
   try {
-    const res = await fetch("https://exp.host/api/v2/push/send", {
+    const res = await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
