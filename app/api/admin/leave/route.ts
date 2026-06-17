@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { getUserEmail } from "@/lib/serverNotifications";
+import { getUserEmail, notifyUser } from "@/lib/serverNotifications";
 import { emailLeaveStatusToProvider } from "@/lib/emailNotifications";
 
 async function requireAdmin(request: Request) {
@@ -60,14 +60,16 @@ export async function PATCH(request: Request) {
 
   if (data?.provider_id) {
     const providerEmail = await getUserEmail(data.provider_id);
+    const notificationTitle = status === "Approved" ? "Leave request approved" : "Leave request rejected";
+    const notificationMessage =
+      status === "Approved"
+        ? `Your ${data.reason} request for ${data.date} has been approved.`
+        : `Your ${data.reason} request for ${data.date} has been rejected.${adminNotes ? ` Reason: ${adminNotes}` : ""}`;
 
-    await supabaseAdmin.from("notifications").insert({
-      user_id: data.provider_id,
-      title: status === "Approved" ? "Leave request approved" : "Leave request rejected",
-      message:
-        status === "Approved"
-          ? `Your ${data.reason} request for ${data.date} has been approved.`
-          : `Your ${data.reason} request for ${data.date} has been rejected.${adminNotes ? ` Reason: ${adminNotes}` : ""}`,
+    await notifyUser({
+      userId: data.provider_id,
+      title: notificationTitle,
+      message: notificationMessage,
       type: "leave",
     });
 
